@@ -58,24 +58,24 @@ import jakarta.inject.Named;
 public class DatabaseDAO implements IDatabaseDAO
 {
     private static final String SQL_QUERY_FIND_USER_BY_LOGIN = "SELECT mylutece_database_user_id, login, name_family, name_given, email, last_login"
-            + " FROM mylutece_database_user WHERE login like ? ";
-    private static final String SQL_QUERY_FIND_RESET_PASSWORD = "SELECT reset_password FROM mylutece_database_user WHERE login like ? ";
+            + " FROM mylutece_database_user WHERE login = ? ";
+    private static final String SQL_QUERY_FIND_RESET_PASSWORD = "SELECT reset_password FROM mylutece_database_user WHERE login = ? ";
     private static final String SQL_QUERY_FIND_ROLES_FROM_LOGIN = "SELECT b.role_key FROM mylutece_database_user a, mylutece_database_user_role b"
-            + " WHERE a.mylutece_database_user_id = b.mylutece_database_user_id AND a.login like ? ";
+            + " WHERE a.mylutece_database_user_id = b.mylutece_database_user_id AND a.login = ? ";
     private static final String SQL_QUERY_FIND_LOGINS_FROM_ROLE = "SELECT a.login FROM mylutece_database_user a, mylutece_database_user_role b"
             + " WHERE  a.mylutece_database_user_id = b.mylutece_database_user_id AND b.role_key = ? ";
     private static final String SQL_QUERY_DELETE_ROLES_FOR_USER = "DELETE FROM mylutece_database_user_role WHERE mylutece_database_user_id = ?";
     private static final String SQL_QUERY_INSERT_ROLE_FOR_USER = "INSERT INTO mylutece_database_user_role ( mylutece_database_user_id, role_key ) VALUES ( ?, ? ) ";
     private static final String SQL_QUERY_FIND_GROUPS_FROM_LOGIN = "SELECT b.group_key FROM mylutece_database_user a, mylutece_database_user_group b"
-            + " WHERE a.mylutece_database_user_id = b.mylutece_database_user_id AND a.login like ? ";
+            + " WHERE a.mylutece_database_user_id = b.mylutece_database_user_id AND a.login = ? ";
     private static final String SQL_QUERY_DELETE_GROUPS_FOR_USER = "DELETE FROM mylutece_database_user_group WHERE mylutece_database_user_id = ?";
     private static final String SQL_QUERY_INSERT_GROUP_FOR_USER = "INSERT INTO mylutece_database_user_group ( mylutece_database_user_id, group_key ) VALUES ( ?, ? ) ";
     private static final String SQL_QUERY_SELECTALL = " SELECT mylutece_database_user_id, login, name_family, name_given, email FROM mylutece_database_user ";
     private static final String SQL_QUERY_FIND_USERS_FROM_GROUP_KEY = "SELECT a.mylutece_database_user_id, a.login, a.name_family, a.name_given, a.email FROM mylutece_database_user a "
             + " INNER JOIN mylutece_database_user_group b ON a.mylutece_database_user_id = b.mylutece_database_user_id WHERE b.group_key = ? ";
-    private static final String SQL_QUERY_FIND_PASSWORD_MAX_VALID_DATE = "SELECT password_max_valid_date FROM mylutece_database_user WHERE login like ? ";
-    private static final String SQL_QUERY_UPDATE_RESET_PASSWORD_FROM_LOGIN = "UPDATE mylutece_database_user SET reset_password = ? WHERE login like ? ";
-    private static final String SQL_QUERY_SELECT_USER_ID_FROM_LOGIN = "SELECT mylutece_database_user_id FROM mylutece_database_user WHERE login like ? ";
+    private static final String SQL_QUERY_FIND_PASSWORD_MAX_VALID_DATE = "SELECT password_max_valid_date FROM mylutece_database_user WHERE login = ? ";
+    private static final String SQL_QUERY_UPDATE_RESET_PASSWORD_FROM_LOGIN = "UPDATE mylutece_database_user SET reset_password = ? WHERE login = ? ";
+    private static final String SQL_QUERY_SELECT_USER_ID_FROM_LOGIN = "SELECT mylutece_database_user_id FROM mylutece_database_user WHERE login = ? ";
 
     @Inject
     private IDatabaseUserFactory _databaseUserFactory;

@@ -84,7 +84,7 @@ public class DatabaseUserDAO implements IDatabaseUserDAO
     private static final String SQL_QUERY_UPDATE_STATUS = " UPDATE mylutece_database_user SET is_active = ? WHERE mylutece_database_user_id IN ( ";
     private static final String SQL_QUERY_UPDATE_NB_ALERT = " UPDATE mylutece_database_user SET nb_alerts_sent = nb_alerts_sent + 1 WHERE mylutece_database_user_id IN ( ";
     private static final String SQL_QUERY_UPDATE_RESET_PASSWORD_LIST_ID = " UPDATE mylutece_database_user SET reset_password = 1 WHERE mylutece_database_user_id IN ( ";
-    private static final String SQL_QUERY_UPDATE_LAST_LOGGIN_DATE = " UPDATE mylutece_database_user SET last_login = ? WHERE login LIKE ? ";
+    private static final String SQL_QUERY_UPDATE_LAST_LOGGIN_DATE = " UPDATE mylutece_database_user SET last_login = ? WHERE login = ? ";
     private static final String SQL_QUERY_UPDATE_REACTIVATE_ACCOUNT = " UPDATE mylutece_database_user SET nb_alerts_sent = 0, account_max_valid_date = ? WHERE mylutece_database_user_id = ? ";
     private static final String SQL_QUERY_SELECT_NB_ALERT_SENT = " SELECT nb_alerts_sent FROM mylutece_database_user WHERE mylutece_database_user_id = ? ";
     private static final String SQL_QUERY_SELECT_BY_IDS = " SELECT mylutece_database_user_id, login, name_family, name_given, email, is_active, account_max_valid_date FROM mylutece_database_user WHERE mylutece_database_user_id IN ( ";
