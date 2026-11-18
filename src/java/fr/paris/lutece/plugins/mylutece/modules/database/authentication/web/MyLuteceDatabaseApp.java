@@ -33,7 +33,11 @@
  */
 package fr.paris.lutece.plugins.mylutece.modules.database.authentication.web;
 
-import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Enumeration;
+import java.util.HashSet;
+import java.util.Set;
 import java.sql.Timestamp;
 import java.util.Collection;
 import java.util.HashMap;
@@ -47,6 +51,7 @@ import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 import jakarta.inject.Named;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequestWrapper;
 
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -82,15 +87,17 @@ import fr.paris.lutece.portal.service.security.SecurityService;
 import fr.paris.lutece.portal.service.security.UserNotSignedException;
 import fr.paris.lutece.portal.service.template.AppTemplateService;
 import fr.paris.lutece.portal.service.template.DatabaseTemplateService;
-import fr.paris.lutece.portal.service.util.AppLogService;
 import fr.paris.lutece.portal.service.util.AppPathService;
 import fr.paris.lutece.portal.service.util.AppPropertiesService;
 import fr.paris.lutece.portal.service.util.BeanUtils;
 import fr.paris.lutece.portal.service.util.CryptoService;
-import fr.paris.lutece.portal.web.LocalVariables;
 import fr.paris.lutece.portal.web.constants.Messages;
 import fr.paris.lutece.portal.web.xpages.XPage;
-import fr.paris.lutece.portal.web.xpages.XPageApplication;
+import fr.paris.lutece.portal.web.cdi.mvc.Models;
+import fr.paris.lutece.portal.util.mvc.commons.annotations.Action;
+import fr.paris.lutece.portal.util.mvc.commons.annotations.View;
+import fr.paris.lutece.portal.util.mvc.xpage.MVCApplication;
+import fr.paris.lutece.portal.util.mvc.xpage.annotations.Controller;
 import fr.paris.lutece.util.ReferenceItem;
 import fr.paris.lutece.util.date.DateUtil;
 import fr.paris.lutece.util.html.HtmlTemplate;
@@ -103,7 +110,8 @@ import fr.paris.lutece.util.url.UrlItem;
  */
 @RequestScoped
 @Named( "mylutece-database.xpage.mylutecedatabase" )
-public class MyLuteceDatabaseApp implements XPageApplication
+@Controller( xpageName = MyLuteceDatabaseApp.XPAGE_NAME, securityTokenEnabled = true )
+public class MyLuteceDatabaseApp extends MVCApplication
 {
     /** serial id */
     private static final long serialVersionUID = -467672310904504414L;
@@ -169,6 +177,23 @@ public class MyLuteceDatabaseApp implements XPageApplication
     private static final String ACTION_REINIT_PASSWORD = "reinitPassword";
     private static final String ACTION_REACTIVATE_ACCOUNT = "reactivateAccount";
     private static final String ACTION_GET_RESET_PASSWORD = "getResetPasswordPage";
+
+    static final String XPAGE_NAME = "mylutecedatabase";
+    // Views: they keep the names of the former actions of the page, still accepted as action=<view> by the links already sent
+    private static final String VIEW_VALIDATE_ACCOUNT = "validateAccount";
+    private static final Set<String> LEGACY_ACTION_VIEWS = new HashSet<>( Arrays.asList( ACTION_CHANGE_PASSWORD, ACTION_DELETE, ACTION_CONFIRM_DELETE,
+            ACTION_VIEW_ACCOUNT, ACTION_MODIFY_ACCOUNT, ACTION_LOST_PASSWORD, ACTION_LOST_LOGIN, ACTION_ACCESS_DENIED, ACTION_CREATE_ACCOUNT,
+            ACTION_REINIT_PASSWORD, ACTION_REACTIVATE_ACCOUNT, ACTION_GET_RESET_PASSWORD, VIEW_VALIDATE_ACCOUNT ) );
+    private static final String PARAMETER_VIEW = "view";
+
+    // Actions: posted with the security token of their view
+    static final String ACTION_DO_CREATE_ACCOUNT = "doCreateAccount";
+    static final String ACTION_DO_MODIFY_ACCOUNT = "doModifyAccount";
+    static final String ACTION_DO_CHANGE_PASSWORD = "doChangePassword";
+    static final String ACTION_DO_REINIT_PASSWORD = "doReinitPassword";
+    static final String ACTION_DO_SEND_PASSWORD = "doSendPassword";
+    static final String ACTION_DO_SEND_LOGIN = "doSendLogin";
+    static final String ACTION_DO_DELETE_ACCOUNT = "doDeleteAccount";
 
     // Errors
     private static final String ERROR_OLD_PASSWORD = "error_old_password";
@@ -252,7 +277,7 @@ public class MyLuteceDatabaseApp implements XPageApplication
     // JSP URL
     private static final String JSP_URL_GET_RESET_PASSWORD_PAGE = "jsp/site/Portal.jsp?page=mylutecedatabase&action=getResetPasswordPage";
     private static final String JSP_URL_MYLUTECE_LOGIN = "jsp/site/Portal.jsp?page=mylutece&action=login";
-    private static final String JSP_URL_HOME = "Portal.jsp";
+    private static final String JSP_URL_PORTAL = "jsp/site/Portal.jsp";
     // Name of the database authentication service, given to the users it authenticates
     private static final String AUTH_SERVICE_NAME = AppPropertiesService.getProperty( "mylutece-database.service.name" );
 
@@ -270,6 +295,8 @@ public class MyLuteceDatabaseApp implements XPageApplication
     private IDatabaseUserFactory _userFactory;
     @Inject
     private DatabaseService _databaseService;
+    @Inject
+    private Models _models;
     
     /**
      * 
@@ -299,115 +326,115 @@ public class MyLuteceDatabaseApp implements XPageApplication
     }
 
     /**
-     * 
-     * @param request
-     *            The HTTP request
-     * @param nMode
-     *            The mode (admin, ...)
-     * @param plugin
-     *            The plugin
-     * @return The Xpage
-     * @throws UserNotSignedException
-     *             if user not signed
-     * @throws SiteMessageException
-     *             Occurs when a site message need to be displayed
+     * {@inheritDoc} A user who must change his password is sent to the change of his password from any view. The former links of the page named their
+     * view with the action parameter: they are still accepted.
      */
+    @Override
     public XPage getPage( HttpServletRequest request, int nMode, Plugin plugin ) throws UserNotSignedException, SiteMessageException
     {
-        XPage page = new XPage( );
-        String strAction = request.getParameter( PARAMETER_ACTION );
         init( request, plugin );
 
+        HttpServletRequest requestPage = getLegacyViewRequest( request );
+        boolean bView = requestPage.getParameter( PARAMETER_ACTION ) == null;
         LuteceUser luteceUser = getRegisteredDatabaseUser( request );
 
-        if ( ( luteceUser != null ) && _databaseService.mustUserChangePassword( luteceUser, plugin ) && !ACTION_CHANGE_PASSWORD.equals( strAction ) )
+        if ( bView && ( luteceUser != null ) && !ACTION_CHANGE_PASSWORD.equals( requestPage.getParameter( PARAMETER_VIEW ) )
+                && _databaseService.mustUserChangePassword( luteceUser, plugin ) )
         {
             getMessageResetPassword( request );
         }
-        else
-        {
-            if ( ACTION_CHANGE_PASSWORD.equals( strAction ) )
-            {
-                page = getChangePasswordPage( page, request );
-            }
-            else
-                if ( ACTION_VIEW_ACCOUNT.equals( strAction ) )
-                {
-                    page = getViewAccountPage( page, request );
-                }
-                else
-                    if ( ACTION_LOST_PASSWORD.equals( strAction ) )
-                    {
-                        page = getLostPasswordPage( page, request );
-                    }
-                    else
-                        if ( ACTION_LOST_LOGIN.equals( strAction ) )
-                        {
-                            page = getLostLoginPage( page, request );
-                        }
-                        else
-                            if ( ACTION_CREATE_ACCOUNT.equals( strAction ) )
-                            {
-                                page = getCreateAccountPage( page, request );
-                            }
-                            else
-                                if ( ACTION_MODIFY_ACCOUNT.equals( strAction ) )
-                                {
-                                    page = getModifyAccountPage( page, request );
-                                }
-                                else
-                                    if ( ACTION_REINIT_PASSWORD.equals( strAction ) )
-                                    {
-                                        page = getReinitPasswordPage( page, request );
-                                    }
-                                    else
-                                        if ( ACTION_REACTIVATE_ACCOUNT.equals( strAction ) )
-                                        {
-                                            reactivateAccount( request );
-                                        }
-                                        else
-                                            if ( ACTION_GET_RESET_PASSWORD.equals( strAction ) )
-                                            {
-                                                getMessageResetPassword( request );
-                                            }
-                                            else
-                                                if ( ACTION_DELETE.equals( strAction ) )
-                                                {
-                                                    if ( getRemoteUser( request ) != null )
-                                                    {
-                                                        SiteMessageService.setMessage( request, PROPERTY_VALIDATE_DELETE, null, PROPERTY_MESSAGE_LABEL_WARNING,
-                                                                AppPropertiesService.getProperty( PROPERTY_MYLUTECE_DELETE_URL ), null,
-                                                                SiteMessage.TYPE_CONFIRMATION );
-                                                    }
-                                                    else
-                                                    {
-                                                        strAction = null;
-                                                    }
 
-                                                }
-                                                else
-                                                    if ( ACTION_CONFIRM_DELETE.equals( strAction ) )
-                                                    {
-                                                        if ( getRemoteUser( request ) != null )
-                                                        {
-                                                            deleteAccount( request );
-                                                            try
-                                                            {
-                                                                LocalVariables.getResponse( ).sendRedirect( JSP_URL_HOME );
-                                                            }
-                                                            catch( IOException e )
-                                                            {
-                                                                AppLogService.error( e );
-                                                            }
-                                                        }
-                                                        else
-                                                        {
-                                                            strAction = null;
-                                                        }
-                                                    }
+        return super.getPage( requestPage, nMode, plugin );
+    }
+
+    /**
+     * Gets the request of a former link naming its view with the action parameter, as a request naming it with the view parameter
+     * 
+     * @param request
+     *            The HTTP request
+     * @return The request to dispatch
+     */
+    private static HttpServletRequest getLegacyViewRequest( HttpServletRequest request )
+    {
+        final String strView = request.getParameter( PARAMETER_ACTION );
+
+        if ( ( request.getParameter( PARAMETER_VIEW ) != null ) || ( strView == null ) || !LEGACY_ACTION_VIEWS.contains( strView ) )
+        {
+            return request;
         }
 
-        if ( ( strAction == null ) || strAction.equals( ACTION_ACCESS_DENIED ) || ( page == null ) )
+        final Map<String, String [ ]> mapParameters = new HashMap<>( request.getParameterMap( ) );
+        mapParameters.remove( PARAMETER_ACTION );
+        mapParameters.put( PARAMETER_VIEW, new String [ ] {
+                strView
+        } );
+
+        return new HttpServletRequestWrapper( request )
+        {
+            @Override
+            public String getParameter( String strName )
+            {
+                String [ ] values = mapParameters.get( strName );
+
+                return ( values == null || values.length == 0 ) ? null : values [0];
+            }
+
+            @Override
+            public String [ ] getParameterValues( String strName )
+            {
+                return mapParameters.get( strName );
+            }
+
+            @Override
+            public Map<String, String [ ]> getParameterMap( )
+            {
+                return Collections.unmodifiableMap( mapParameters );
+            }
+
+            @Override
+            public Enumeration<String> getParameterNames( )
+            {
+                return Collections.enumeration( mapParameters.keySet( ) );
+            }
+        };
+    }
+
+    /**
+     * Gets the content of a page: the model goes to the models of the request, which carry the security token of the view, added to the forms of the
+     * page
+     * 
+     * @param strTemplate
+     *            The template
+     * @param model
+     *            The model
+     * @return The content
+     */
+    private String getContentWithToken( String strTemplate, Map<String, Object> model )
+    {
+        model.forEach( ( strKey, value ) -> {
+            if ( value != null )
+            {
+                _models.put( strKey, value );
+            }
+        } );
+
+        return getXPage( strTemplate, _locale ).getContent( );
+    }
+
+    /**
+     * Displays the access denied message when a page cannot be built
+     * 
+     * @param request
+     *            The HTTP request
+     * @param page
+     *            The page, or null
+     * @return The page
+     * @throws SiteMessageException
+     *             the access denied message
+     */
+    private XPage checkPage( HttpServletRequest request, XPage page ) throws SiteMessageException
+    {
+        if ( page == null )
         {
             SiteMessageService.setMessage( request, PROPERTY_ACCESS_DENIED_ERROR_MESSAGE, null, PROPERTY_ACCESS_DENIED_TITLE_MESSAGE, null, null,
                     SiteMessage.TYPE_STOP );
@@ -415,6 +442,338 @@ public class MyLuteceDatabaseApp implements XPageApplication
 
         return page;
     }
+
+    /**
+     * Redirects to the URL given by an action: an URL from the root of the webapp is completed with its base URL
+     * 
+     * @param request
+     *            The HTTP request
+     * @param strUrl
+     *            The URL
+     * @return The redirection
+     */
+    private XPage redirectTo( HttpServletRequest request, String strUrl )
+    {
+        String strTarget = strUrl;
+
+        if ( ( strTarget != null ) && !strTarget.startsWith( "http://" ) && !strTarget.startsWith( "https://" ) )
+        {
+            strTarget = AppPathService.getBaseUrl( request ) + strTarget;
+        }
+
+        return redirect( request, strTarget );
+    }
+
+    // Views
+
+    /**
+     * Default view: the access denied message, as the page without action
+     * 
+     * @param request
+     *            The HTTP request
+     * @return Nothing, the message is displayed
+     * @throws SiteMessageException
+     *             the access denied message
+     */
+    @View( value = ACTION_ACCESS_DENIED, defaultView = true )
+    public XPage viewAccessDenied( HttpServletRequest request ) throws SiteMessageException
+    {
+        return checkPage( request, null );
+    }
+
+    /**
+     * Change password page
+     * 
+     * @param request
+     *            The HTTP request
+     * @return The page
+     * @throws SiteMessageException
+     *             if the page cannot be displayed
+     */
+    @View( value = ACTION_CHANGE_PASSWORD, securityTokenAction = ACTION_DO_CHANGE_PASSWORD )
+    public XPage viewChangePassword( HttpServletRequest request ) throws SiteMessageException
+    {
+        return checkPage( request, getChangePasswordPage( new XPage( ), request ) );
+    }
+
+    /**
+     * Account page
+     * 
+     * @param request
+     *            The HTTP request
+     * @return The page
+     * @throws UserNotSignedException
+     *             if the user is not signed in
+     * @throws SiteMessageException
+     *             if the page cannot be displayed
+     */
+    @View( ACTION_VIEW_ACCOUNT )
+    public XPage viewViewAccount( HttpServletRequest request ) throws UserNotSignedException, SiteMessageException
+    {
+        return checkPage( request, getViewAccountPage( new XPage( ), request ) );
+    }
+
+    /**
+     * Lost password page
+     * 
+     * @param request
+     *            The HTTP request
+     * @return The page
+     * @throws SiteMessageException
+     *             if the page cannot be displayed
+     */
+    @View( value = ACTION_LOST_PASSWORD, securityTokenAction = ACTION_DO_SEND_PASSWORD )
+    public XPage viewLostPassword( HttpServletRequest request ) throws SiteMessageException
+    {
+        return checkPage( request, getLostPasswordPage( new XPage( ), request ) );
+    }
+
+    /**
+     * Lost login page
+     * 
+     * @param request
+     *            The HTTP request
+     * @return The page
+     * @throws SiteMessageException
+     *             if the page cannot be displayed
+     */
+    @View( value = ACTION_LOST_LOGIN, securityTokenAction = ACTION_DO_SEND_LOGIN )
+    public XPage viewLostLogin( HttpServletRequest request ) throws SiteMessageException
+    {
+        return checkPage( request, getLostLoginPage( new XPage( ), request ) );
+    }
+
+    /**
+     * Account creation page
+     * 
+     * @param request
+     *            The HTTP request
+     * @return The page
+     * @throws SiteMessageException
+     *             if the page cannot be displayed
+     */
+    @View( value = ACTION_CREATE_ACCOUNT, securityTokenAction = ACTION_DO_CREATE_ACCOUNT )
+    public XPage viewCreateAccount( HttpServletRequest request ) throws SiteMessageException
+    {
+        return checkPage( request, getCreateAccountPage( new XPage( ), request ) );
+    }
+
+    /**
+     * Account modification page
+     * 
+     * @param request
+     *            The HTTP request
+     * @return The page
+     * @throws UserNotSignedException
+     *             if the user is not signed in
+     * @throws SiteMessageException
+     *             if the page cannot be displayed
+     */
+    @View( value = ACTION_MODIFY_ACCOUNT, securityTokenAction = ACTION_DO_MODIFY_ACCOUNT )
+    public XPage viewModifyAccount( HttpServletRequest request ) throws UserNotSignedException, SiteMessageException
+    {
+        return checkPage( request, getModifyAccountPage( new XPage( ), request ) );
+    }
+
+    /**
+     * Password reinitialization page (link of the lost password e-mail)
+     * 
+     * @param request
+     *            The HTTP request
+     * @return The page
+     * @throws SiteMessageException
+     *             if the page cannot be displayed
+     */
+    @View( value = ACTION_REINIT_PASSWORD, securityTokenAction = ACTION_DO_REINIT_PASSWORD )
+    public XPage viewReinitPassword( HttpServletRequest request ) throws SiteMessageException
+    {
+        return checkPage( request, getReinitPasswordPage( new XPage( ), request ) );
+    }
+
+    /**
+     * Reactivation of an account close to its expiry (link of the alert e-mail, checked by its reference)
+     * 
+     * @param request
+     *            The HTTP request
+     * @return Nothing, a message is displayed
+     * @throws SiteMessageException
+     *             the result message
+     */
+    @View( ACTION_REACTIVATE_ACCOUNT )
+    public XPage viewReactivateAccount( HttpServletRequest request ) throws SiteMessageException
+    {
+        reactivateAccount( request );
+
+        return checkPage( request, null );
+    }
+
+    /**
+     * Message asking the user to change his password
+     * 
+     * @param request
+     *            The HTTP request
+     * @return Nothing, a message is displayed
+     * @throws SiteMessageException
+     *             the message
+     */
+    @View( ACTION_GET_RESET_PASSWORD )
+    public XPage viewResetPasswordMessage( HttpServletRequest request ) throws SiteMessageException
+    {
+        getMessageResetPassword( request );
+
+        return checkPage( request, null );
+    }
+
+    /**
+     * Confirmation of the deletion of the account: the confirmation posts the deletion with the token of this view
+     * 
+     * @param request
+     *            The HTTP request
+     * @return Nothing, the confirmation is displayed
+     * @throws SiteMessageException
+     *             the confirmation
+     */
+    @View( value = ACTION_DELETE, securityTokenAction = ACTION_DO_DELETE_ACCOUNT )
+    public XPage viewDeleteAccount( HttpServletRequest request ) throws SiteMessageException
+    {
+        if ( getRemoteUser( request ) != null )
+        {
+            SiteMessageService.setMessage( request, PROPERTY_VALIDATE_DELETE, null, PROPERTY_MESSAGE_LABEL_WARNING,
+                    AppPropertiesService.getProperty( PROPERTY_MYLUTECE_DELETE_URL ), null, SiteMessage.TYPE_CONFIRMATION );
+        }
+
+        return checkPage( request, null );
+    }
+
+    /**
+     * Former URL of the deletion: it no longer deletes the account, it asks the confirmation
+     * 
+     * @param request
+     *            The HTTP request
+     * @return Nothing, the confirmation is displayed
+     * @throws SiteMessageException
+     *             the confirmation
+     */
+    @View( value = ACTION_CONFIRM_DELETE, securityTokenAction = ACTION_DO_DELETE_ACCOUNT )
+    public XPage viewConfirmDeleteAccount( HttpServletRequest request ) throws SiteMessageException
+    {
+        return viewDeleteAccount( request );
+    }
+
+    /**
+     * Validation of an account by the link of the validation e-mail: the key of the link, single-use and sent only by e-mail, authorizes it
+     * 
+     * @param request
+     *            The HTTP request
+     * @return The redirection to the result
+     */
+    @View( VIEW_VALIDATE_ACCOUNT )
+    public XPage viewValidateAccount( HttpServletRequest request )
+    {
+        return redirectTo( request, doValidateAccount( request ) );
+    }
+
+    // Actions
+
+    /**
+     * Creates an account
+     * 
+     * @param request
+     *            The HTTP request
+     * @return The redirection to the result
+     */
+    @Action( ACTION_DO_CREATE_ACCOUNT )
+    public XPage actionCreateAccount( HttpServletRequest request )
+    {
+        return redirectTo( request, doCreateAccount( request ) );
+    }
+
+    /**
+     * Modifies the account
+     * 
+     * @param request
+     *            The HTTP request
+     * @return The redirection to the result
+     */
+    @Action( ACTION_DO_MODIFY_ACCOUNT )
+    public XPage actionModifyAccount( HttpServletRequest request )
+    {
+        return redirectTo( request, doModifyAccount( request ) );
+    }
+
+    /**
+     * Changes the password
+     * 
+     * @param request
+     *            The HTTP request
+     * @return The redirection to the result
+     */
+    @Action( ACTION_DO_CHANGE_PASSWORD )
+    public XPage actionChangePassword( HttpServletRequest request )
+    {
+        return redirectTo( request, doChangePassword( request ) );
+    }
+
+    /**
+     * Reinitializes the password with the key of the lost password e-mail
+     * 
+     * @param request
+     *            The HTTP request
+     * @return The redirection to the result
+     */
+    @Action( ACTION_DO_REINIT_PASSWORD )
+    public XPage actionReinitPassword( HttpServletRequest request )
+    {
+        return redirectTo( request, doReinitPassword( request ) );
+    }
+
+    /**
+     * Sends the lost password e-mail
+     * 
+     * @param request
+     *            The HTTP request
+     * @return The redirection to the result
+     */
+    @Action( ACTION_DO_SEND_PASSWORD )
+    public XPage actionSendPassword( HttpServletRequest request )
+    {
+        return redirectTo( request, doSendPassword( request ) );
+    }
+
+    /**
+     * Sends the lost login e-mail
+     * 
+     * @param request
+     *            The HTTP request
+     * @return The redirection to the result
+     */
+    @Action( ACTION_DO_SEND_LOGIN )
+    public XPage actionSendLogin( HttpServletRequest request )
+    {
+        return redirectTo( request, doSendLogin( request ) );
+    }
+
+    /**
+     * Deletes the account, confirmed by the user
+     * 
+     * @param request
+     *            The HTTP request
+     * @return The redirection to the home page
+     * @throws SiteMessageException
+     *             the access denied message for a user without database account
+     */
+    @Action( ACTION_DO_DELETE_ACCOUNT )
+    public XPage actionDeleteAccount( HttpServletRequest request ) throws SiteMessageException
+    {
+        if ( getRemoteUser( request ) == null )
+        {
+            return checkPage( request, null );
+        }
+        deleteAccount( request );
+
+        return redirect( request, AppPathService.getBaseUrl( request ) + JSP_URL_PORTAL );
+    }
+
 
     /**
      * Returns the NewAccount URL of the Authentication Service
@@ -621,8 +980,7 @@ public class MyLuteceDatabaseApp implements XPageApplication
             model.put( MARK_JCAPTCHA, HtmlMarkup.of( _captchaService.get( ).getHtmlCode( ) ) );
         }
 
-        HtmlTemplate t = AppTemplateService.getTemplate( TEMPLATE_MODIFY_ACCOUNT_PAGE, _locale, model );
-        page.setContent( t.getHtml( ) );
+        page.setContent( getContentWithToken( TEMPLATE_MODIFY_ACCOUNT_PAGE, model ) );
         page.setPathLabel( I18nService.getLocalizedString( PROPERTY_MODIFY_ACCOUNT_LABEL, _locale ) );
         page.setTitle( I18nService.getLocalizedString( PROPERTY_MODIFY_ACCOUNT_TITLE, _locale ) );
 
@@ -661,8 +1019,7 @@ public class MyLuteceDatabaseApp implements XPageApplication
         model.put( MARK_GROUPS, luteceUser.getGroups( ) );
         model.put( MARK_SHOW_INPUT_LOGIN, !_userFactory.isEmailUsedAsLogin( ) );
 
-        HtmlTemplate t = AppTemplateService.getTemplate( TEMPLATE_VIEW_ACCOUNT_PAGE, _locale, model );
-        page.setContent( t.getHtml( ) );
+        page.setContent( getContentWithToken( TEMPLATE_VIEW_ACCOUNT_PAGE, model ) );
         page.setPathLabel( I18nService.getLocalizedString( PROPERTY_VIEW_ACCOUNT_LABEL, _locale ) );
         page.setTitle( I18nService.getLocalizedString( PROPERTY_VIEW_ACCOUNT_TITLE, _locale ) );
 
@@ -746,8 +1103,7 @@ public class MyLuteceDatabaseApp implements XPageApplication
             model.put( MARK_JCAPTCHA, HtmlMarkup.of( _captchaService.get( ).getHtmlCode( ) ) );
         }
 
-        HtmlTemplate t = AppTemplateService.getTemplate( TEMPLATE_CREATE_ACCOUNT_PAGE, _locale, model );
-        page.setContent( t.getHtml( ) );
+        page.setContent( getContentWithToken( TEMPLATE_CREATE_ACCOUNT_PAGE, model ) );
         page.setPathLabel( I18nService.getLocalizedString( PROPERTY_CREATE_ACCOUNT_LABEL, _locale ) );
         page.setTitle( I18nService.getLocalizedString( PROPERTY_CREATE_ACCOUNT_TITLE, _locale ) );
 
@@ -1071,8 +1427,7 @@ public class MyLuteceDatabaseApp implements XPageApplication
             model.put( MARK_KEY, strKey );
             model.put( MARK_ACTION_SUCCESSFUL, request.getParameter( PARAMETER_ACTION_SUCCESSFUL ) );
 
-            HtmlTemplate t = AppTemplateService.getTemplate( TEMPLATE_REINIT_PASSWORD_PAGE, _locale, model );
-            page.setContent( t.getHtml( ) );
+            page.setContent( getContentWithToken( TEMPLATE_REINIT_PASSWORD_PAGE, model ) );
             page.setPathLabel( I18nService.getLocalizedString( PROPERTY_REINIT_PASSWORD_LABEL, _locale ) );
             page.setTitle( I18nService.getLocalizedString( PROPERTY_REINIT_PASSWORD_TITLE, _locale ) );
         }
@@ -1211,8 +1566,7 @@ public class MyLuteceDatabaseApp implements XPageApplication
         model.put( MARK_ACTION_SUCCESSFUL, strStateSending );
         model.put( MARK_EMAIL, strEmail );
 
-        HtmlTemplate t = AppTemplateService.getTemplate( TEMPLATE_LOST_PASSWORD_PAGE, _locale, model );
-        page.setContent( t.getHtml( ) );
+        page.setContent( getContentWithToken( TEMPLATE_LOST_PASSWORD_PAGE, model ) );
         page.setPathLabel( I18nService.getLocalizedString( PROPERTY_LOST_PASSWORD_LABEL, _locale ) );
         page.setTitle( I18nService.getLocalizedString( PROPERTY_LOST_PASSWORD_TITLE, _locale ) );
 
@@ -1240,8 +1594,7 @@ public class MyLuteceDatabaseApp implements XPageApplication
         model.put( MARK_ACTION_SUCCESSFUL, strStateSending );
         model.put( MARK_EMAIL, strEmail );
 
-        HtmlTemplate t = AppTemplateService.getTemplate( TEMPLATE_LOST_LOGIN_PAGE, _locale, model );
-        page.setContent( t.getHtml( ) );
+        page.setContent( getContentWithToken( TEMPLATE_LOST_LOGIN_PAGE, model ) );
         page.setPathLabel( I18nService.getLocalizedString( PROPERTY_LOST_LOGIN_LABEL, _locale ) );
         page.setTitle( I18nService.getLocalizedString( PROPERTY_LOST_LOGIN_TITLE, _locale ) );
 
@@ -1275,8 +1628,7 @@ public class MyLuteceDatabaseApp implements XPageApplication
             model.put( MARK_PASSWORD_MINIMUM_LENGTH, I18nService.getLocalizedString( MESSAGE_MINIMUM_PASSWORD_LENGTH, param, _locale ) );
         }
 
-        HtmlTemplate t = AppTemplateService.getTemplate( TEMPLATE_CHANGE_PASSWORD_PAGE, _locale, model );
-        page.setContent( t.getHtml( ) );
+        page.setContent( getContentWithToken( TEMPLATE_CHANGE_PASSWORD_PAGE, model ) );
         page.setPathLabel( I18nService.getLocalizedString( PROPERTY_CHANGE_PASSWORD_LABEL, _locale ) );
         page.setTitle( I18nService.getLocalizedString( PROPERTY_CHANGE_PASSWORD_TITLE, _locale ) );
 

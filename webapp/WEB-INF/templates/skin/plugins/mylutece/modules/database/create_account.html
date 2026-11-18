@@ -78,7 +78,7 @@
             </@cAlert>
         <#else>
             <@cTitle level=2>#i18n{module.mylutece.database.xpage.create_account.pageTitle}</@cTitle>
-                <@cForm name='createAccount' action='jsp/site/plugins/mylutece/modules/database/DoCreateAccount.jsp'>
+                <@cForm name='createAccount' action='jsp/site/Portal.jsp?page=mylutecedatabase&action=doCreateAccount'>
                 <@cInput type='hidden' name='plugin_name' value=plugin_name! />
                 <#if show_input_login>
                 <@cField label='#i18n{module.mylutece.database.xpage.create_account.login}' for='login' required=true>

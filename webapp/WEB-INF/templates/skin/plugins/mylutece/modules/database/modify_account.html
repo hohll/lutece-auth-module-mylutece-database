@@ -31,7 +31,7 @@
             </@cAlert>
         <#else>
             <@cTitle level=2>#i18n{module.mylutece.database.xpage.modify_account.pageTitle}</@cTitle>
-            <@cForm name='modifyAccount' action='jsp/site/plugins/mylutece/modules/database/DoModifyAccount.jsp'>
+            <@cForm name='modifyAccount' action='jsp/site/Portal.jsp?page=mylutecedatabase&action=doModifyAccount'>
             <@cInput type='hidden' name='plugin_name' value=plugin_name! />
             <#if show_input_email>
             <@cField label='#i18n{module.mylutece.database.xpage.modify_account.eMail}' for='email' required=true>

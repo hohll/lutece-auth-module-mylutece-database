@@ -30,7 +30,7 @@
                         <@cAlert class='warning' title='#i18n{module.mylutece.database.message.lost_login.errorSendingEmail}' />
                     </#if>
                 </#if>
-                <@cForm name='lostLogin' action='jsp/site/plugins/mylutece/modules/database/DoSendLogin.jsp'>
+                <@cForm name='lostLogin' action='jsp/site/Portal.jsp?page=mylutecedatabase&action=doSendLogin'>
                 <@cInput type='hidden' name='plugin_name' value=plugin_name! />
                 <@cField label='#i18n{module.mylutece.database.xpage.lost_login.email}' for='email' required=true> 
                     <@cInput class='form-control ${classEmail?if_exists}' type='email' name='email' id='email' maxlength=100 value='' />

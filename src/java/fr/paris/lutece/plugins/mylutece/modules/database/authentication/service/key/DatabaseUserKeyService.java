@@ -61,7 +61,7 @@ public class DatabaseUserKeyService
     private static final String PARAMETER_KEY = "key";
 
     // JSP
-    private static final String JSP_VALIDATE_ACCOUNT = "jsp/site/plugins/mylutece/modules/database/DoValidateAccount.jsp";
+    private static final String JSP_VALIDATE_ACCOUNT = "jsp/site/Portal.jsp?page=mylutecedatabase&view=validateAccount";
 
     /**
      * Get the instance of the service
