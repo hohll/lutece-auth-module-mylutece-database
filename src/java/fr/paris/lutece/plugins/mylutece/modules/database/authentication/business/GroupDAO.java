@@ -55,8 +55,10 @@ public final class GroupDAO implements IGroupDAO
     private static final String SQL_QUERY_SELECTALL = " SELECT group_key, group_description FROM mylutece_database_group ORDER BY group_key";
     private static final String SQL_QUERY_SELECT_BY_KEY = " SELECT group_key, group_description FROM mylutece_database_group WHERE group_key = ? ORDER BY group_key";
     private static final String SQL_QUERY_INSERT = " INSERT INTO mylutece_database_group ( group_key, group_description ) VALUES ( ?, ? )";
-    private static final String SQL_QUERY_DELETE = " DELETE FROM mylutece_database_group WHERE group_key like ? ";
-    private static final String SQL_QUERY_UPDATE = " UPDATE mylutece_database_group SET group_key = ?, group_description = ? WHERE group_key like ?";
+    private static final String SQL_QUERY_DELETE = " DELETE FROM mylutece_database_group WHERE group_key = ? ";
+    private static final String SQL_QUERY_DELETE_GROUP_ROLES = " DELETE FROM mylutece_database_group_role WHERE group_key = ? ";
+    private static final String SQL_QUERY_DELETE_GROUP_USERS = " DELETE FROM mylutece_database_user_group WHERE group_key = ? ";
+    private static final String SQL_QUERY_UPDATE = " UPDATE mylutece_database_group SET group_key = ?, group_description = ? WHERE group_key = ?";
     private static final String SQL_QUERY_SELECT_GROUP_FROM_SEARCH = " SELECT group_key, group_description FROM mylutece_database_group "
             + " WHERE group_key LIKE ? AND group_description LIKE ? ORDER BY group_key ";
 
@@ -126,11 +128,16 @@ public final class GroupDAO implements IGroupDAO
     @Override
     public void delete( String strGroupKey, Plugin plugin )
     {
-        int nParam = 0;
-        try ( DAOUtil daoUtil = new DAOUtil( SQL_QUERY_DELETE, plugin ) )
+        // The roles and the members of the group go away with it: its former members no longer get its roles
+        for ( String strQuery : new String [ ] {
+                SQL_QUERY_DELETE_GROUP_ROLES, SQL_QUERY_DELETE_GROUP_USERS, SQL_QUERY_DELETE
+        } )
         {
-            daoUtil.setString( ++nParam, strGroupKey );
-            daoUtil.executeUpdate( );
+            try ( DAOUtil daoUtil = new DAOUtil( strQuery, plugin ) )
+            {
+                daoUtil.setString( 1, strGroupKey );
+                daoUtil.executeUpdate( );
+            }
         }
     }
 
