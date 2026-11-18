@@ -1,7 +1,7 @@
 <@pageContainer>
     <@pageColumn>
 		<@pageHeader title='#i18n{module.mylutece.database.create_user.tableTitle}' />
-		<@tform method='post' name='create_user' action='jsp/admin/plugins/mylutece/modules/database/DoCreateUser.jsp' boxed=true>
+		<@tform method='post' name='create_user' action='jsp/admin/plugins/mylutece/modules/database/ManageUsers.jsp?action=createUser' boxed=true>
 			<@input type='hidden' name='plugin_name' value='${plugin_name}' />
 			<@fieldSet legend='#i18n{module.mylutece.database.create_user.labelIdentity}'>
 				<#if show_input_login>

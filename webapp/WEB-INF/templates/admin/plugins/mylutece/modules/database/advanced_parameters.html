@@ -12,18 +12,18 @@
 	<@MyLuteceDBAdvParamsMainForm />
 </#if>
 <#macro MyLuteceDBAdvParamsFormActions class=''>
-<@tform action='jsp/admin/plugins/mylutece/modules/database/GetChangeUseAdvancedSecurityParameters.jsp' class=class>
+<@tform action='jsp/admin/plugins/mylutece/modules/database/ManageUsers.jsp?view=confirmChangeUseAdvancedSecurityParameters' class=class>
 	<#if use_advanced_security_parameters>
 		<@button type='submit' title='#i18n{mylutece.manage_advanced_parameters.removeAdvancedSecurityParameters}' hideTitle=['xs','sm','md'] buttonIcon='times' color='danger' size='' />
 	<#else>
 		<@button type='submit' title='#i18n{mylutece.manage_advanced_parameters.useAdvancedSecurityParameters}' hideTitle=['xs','sm','md'] buttonIcon='check' color='success' size='' />
 	</#if>
 	<@aButton href='jsp/admin/plugins/mylutece/attribute/ManageAttributes.jsp' title='#i18n{module.mylutece.database.manage_advanced_parameters.btnManageAttributes}' hideTitle=['xs','sm','md'] buttonIcon='wrench' size='' />
-	<@aButton href='jsp/admin/plugins/mylutece/modules/database/ChangeFieldAnonymizeUsers.jsp' title='#i18n{mylutece.manage_advanced_parameters.buttonLabelAnonymizationOptions}' hideTitle=['xs','sm','md'] buttonIcon='user-secret' size='' />
+	<@aButton href='jsp/admin/plugins/mylutece/modules/database/ManageUsers.jsp?view=changeFieldAnonymizeUsers' title='#i18n{mylutece.manage_advanced_parameters.buttonLabelAnonymizationOptions}' hideTitle=['xs','sm','md'] buttonIcon='user-secret' size='' />
 </@tform>
 </#macro>
 <#macro MyLuteceDBAdvParamsMainForm>
-<@tform method='post' name='password_global_security' action='jsp/admin/plugins/mylutece/modules/database/DoModifyDatabaseUserParameters.jsp' boxed=true>
+<@tform method='post' name='password_global_security' action='jsp/admin/plugins/mylutece/modules/database/ManageUsers.jsp?action=modifyDatabaseUserParameters' boxed=true>
 	<@fieldSet legend='#i18n{portal.users.manage_advanced_parameters.securityParameters}'>
 		<@formGroup helpKey='#i18n{module.mylutece.database.manage_advanced_parameters.labelAccountCreationValidationEmailComment}'>
 			<@checkBox orientation='switch' labelKey='#i18n{module.mylutece.database.manage_advanced_parameters.labelAccountCreationValidationEmail}' name='account_creation_validation_email' id='account_creation_validation_email' value='true' checked=(account_creation_validation_email?? && account_creation_validation_email) />
@@ -101,7 +101,7 @@
 	</@fieldSet>
 </@tform>
 <@div class='my-3'></@div>
-<@tform method='post' action='jsp/admin/plugins/mylutece/modules/database/ModifyAccountLifeTimeEmails.jsp' boxed=true>
+<@tform method='post' action='jsp/admin/plugins/mylutece/modules/database/ManageUsers.jsp?view=modifyAccountLifeTimeEmails' boxed=true>
 	<@fieldSet legend='#i18n{mylutece.accountLifeTime.labelLifeTimeNotifications}'>
 		<@formGroup labelFor='email_type' labelKey='#i18n{mylutece.accountLifeTime.labelSelectEmail}'>
 			<@select name='email_type'>

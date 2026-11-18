@@ -1,11 +1,11 @@
 <@pageContainer>
     <@pageColumn>
 		<@pageHeader title='#i18n{module.mylutece.database.export_users.pageTitle}' />
-		<@tform method='post' name='import_users_from_file' action='jsp/admin/plugins/mylutece/modules/database/DoExportUsers.jsp'>
+		<@tform method='post' name='import_users_from_file' action='jsp/admin/plugins/mylutece/modules/database/ManageUsers.jsp?action=exportUsers'>
 			<@tabs>
 				<@tabList>
-					<@tabLink active=true href='jsp/admin/plugins/mylutece/modules/database/ExportUsers.jsp' title='#i18n{module.mylutece.database.export_users.labelExportUsers}' />
-					<@tabLink href='jsp/admin/plugins/mylutece/modules/database/ImportUsersFromFile.jsp' title='#i18n{module.mylutece.database.import_users_from_file.labelImportUsers}' />
+					<@tabLink active=true href='jsp/admin/plugins/mylutece/modules/database/ManageUsers.jsp?view=exportUsers' title='#i18n{module.mylutece.database.export_users.labelExportUsers}' />
+					<@tabLink href='jsp/admin/plugins/mylutece/modules/database/ManageUsers.jsp?view=importUsersFromFile' title='#i18n{module.mylutece.database.import_users_from_file.labelImportUsers}' />
 				</@tabList>
 				<@tabContent>
 					<@formGroup helpKey='#i18n{module.mylutece.database.export_users.labelHelpExportAttributes}'>

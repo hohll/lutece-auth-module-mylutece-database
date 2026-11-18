@@ -3,7 +3,7 @@
 		<#assign pageHeaderTitle><#if user.status = 10>#i18n{module.mylutece.database.manage_roles_user.titleUser} #i18n{mylutece.anonymize_user.statusLabelAnonymize}<#else>#i18n{module.mylutece.database.manage_roles_user.titleUser} ${user.lastName} ${user.firstName}</#if></#assign>
 		<@pageHeader title=pageHeaderTitle />
 		<#if user.status = 10><@alert color='warning'>#i18n{module.mylutece.database.modify_user.titleUser} #i18n{mylutece.anonymize_user.statusLabelAnonymize}</@alert><#else>
-		<@tform method='post' name='create_user' action='jsp/admin/plugins/mylutece/modules/database/DoModifyUser.jsp'>
+		<@tform method='post' name='create_user' action='jsp/admin/plugins/mylutece/modules/database/ManageUsers.jsp?action=modifyUser'>
 		<@input type='hidden' name='plugin_name' value='${plugin_name}' />
 		<@input type='hidden' name='mylutece_database_user_id' value='${user.userId}' />
 		<#assign userName><#if user.status = 10>#i18n{module.mylutece.database.modify_user.titleUser}<#else>${user.lastName} ${user.firstName}</#if></#assign>

@@ -2,7 +2,7 @@
 <@pageContainer>
     <@pageColumn>
 		<@pageHeader title=userName  />
-		<@tform method='post' action='jsp/admin/plugins/mylutece/modules/database/DoAssignRoleUser.jsp'>
+		<@tform method='post' action='jsp/admin/plugins/mylutece/modules/database/ManageUsers.jsp?action=assignRoleUser'>
 			<@input type='hidden' name='mylutece_database_user_id' value='${user.userId}' />
 			<@input type='hidden' name='plugin_name' value='${plugin_name}' />
 			<@manageFeature>

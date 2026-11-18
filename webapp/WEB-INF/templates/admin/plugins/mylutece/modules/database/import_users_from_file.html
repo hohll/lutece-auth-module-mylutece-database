@@ -1,11 +1,12 @@
 <@pageContainer>
     <@pageColumn>
 		<@pageHeader title='#i18n{module.mylutece.database.import_users_from_file.pageTitle}' />
-		<@tform enctype="multipart/form-data" method='post' name='import_users_from_file' action='jsp/admin/plugins/mylutece/modules/database/DoImportUsersFromFile.jsp'>
+		<@tform enctype="multipart/form-data" method='post' name='import_users_from_file' action='jsp/admin/plugins/mylutece/modules/database/ManageUsers.jsp'>
+			<@input type='hidden' name='action' value='importUsersFromFile' />
 			<@tabs>
 				<@tabList>
-					<@tabLink href='jsp/admin/plugins/mylutece/modules/database/ExportUsers.jsp' title='#i18n{module.mylutece.database.export_users.labelExportUsers}' />
-					<@tabLink active=true href='jsp/admin/plugins/mylutece/modules/database/ImportUsersFromFile.jsp' title='#i18n{module.mylutece.database.import_users_from_file.labelImportUsers}' />
+					<@tabLink href='jsp/admin/plugins/mylutece/modules/database/ManageUsers.jsp?view=exportUsers' title='#i18n{module.mylutece.database.export_users.labelExportUsers}' />
+					<@tabLink active=true href='jsp/admin/plugins/mylutece/modules/database/ManageUsers.jsp?view=importUsersFromFile' title='#i18n{module.mylutece.database.import_users_from_file.labelImportUsers}' />
 				</@tabList>
 				<@tabContent>
 					<@fieldSet legend='#i18n{module.mylutece.database.import_users_from_file.pageTitle}'> 

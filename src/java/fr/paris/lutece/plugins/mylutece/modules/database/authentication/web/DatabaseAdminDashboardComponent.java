@@ -40,6 +40,8 @@ import fr.paris.lutece.portal.business.rbac.RBAC;
 import fr.paris.lutece.portal.business.user.AdminUser;
 import fr.paris.lutece.portal.service.dashboard.admin.AdminDashboardComponent;
 import fr.paris.lutece.portal.service.rbac.RBACService;
+import fr.paris.lutece.portal.service.security.ISecurityTokenService;
+import fr.paris.lutece.portal.service.security.SecurityTokenHandler;
 import fr.paris.lutece.portal.service.template.AppTemplateService;
 import fr.paris.lutece.util.html.HtmlTemplate;
 
@@ -47,6 +49,7 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.util.Map;
 
+import jakarta.enterprise.inject.spi.CDI;
 import jakarta.servlet.http.HttpServletRequest;
 
 /**
@@ -70,6 +73,10 @@ public class DatabaseAdminDashboardComponent extends AdminDashboardComponent
                 (User) user ) )
         {
             Map<String, Object> model = DatabaseService.getService( ).getManageAdvancedParameters( user );
+            // The form of the parameters posts the action of the users controller: it carries the token of this action
+            ISecurityTokenService securityTokenService = CDI.current( ).select( ISecurityTokenService.class ).get( );
+            model.put( SecurityTokenHandler.MARK_CSRF_TOKEN,
+                    securityTokenService.getToken( request, DatabaseJspBean.ACTION_MODIFY_DATABASE_USER_PARAMETERS ) );
             HtmlTemplate template = AppTemplateService.getTemplate( TEMPLATE_ADMIN_DASHBOARD, user.getLocale( ), model );
 
             return template.getHtml( );

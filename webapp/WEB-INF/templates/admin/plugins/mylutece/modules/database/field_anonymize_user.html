@@ -1,7 +1,7 @@
 <@pageContainer>
 	<@pageColumn>
 		<@pageHeader title='#i18n{portal.users.anonymize_user.titleAnonymizeUser}' />
-		<@tform method='post' name='anonymize_user' action='jsp/admin/plugins/mylutece/modules/database/DoChangeFieldAnonymizeUsers.jsp' boxed=true>
+		<@tform method='post' name='anonymize_user' action='jsp/admin/plugins/mylutece/modules/database/ManageUsers.jsp?action=changeFieldAnonymizeUsers' boxed=true>
 			<@fieldSet legend='#i18n{portal.users.create_user.labelIdentity}'>
 				<@formGroup>
 					<@checkBox orientation='switch' labelFor='login' labelKey='#i18n{module.mylutece.database.create_user.login}' id='login' name='login' value='true' checked=(login?? && login) />

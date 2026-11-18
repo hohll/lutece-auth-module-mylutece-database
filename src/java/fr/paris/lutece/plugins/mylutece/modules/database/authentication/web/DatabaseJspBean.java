@@ -79,10 +79,13 @@ import fr.paris.lutece.portal.service.template.DatabaseTemplateService;
 import fr.paris.lutece.portal.service.util.AppPathService;
 import fr.paris.lutece.portal.service.util.AppPropertiesService;
 import fr.paris.lutece.portal.service.workgroup.AdminWorkgroupService;
-import fr.paris.lutece.portal.web.admin.PluginAdminPageJspBean;
+import fr.paris.lutece.portal.util.mvc.admin.MVCAdminJspBean;
+import fr.paris.lutece.portal.util.mvc.admin.annotations.Controller;
+import fr.paris.lutece.portal.util.mvc.commons.annotations.Action;
+import fr.paris.lutece.portal.util.mvc.commons.annotations.View;
+import fr.paris.lutece.portal.web.cdi.mvc.Models;
 import fr.paris.lutece.portal.web.constants.Messages;
 import fr.paris.lutece.portal.web.constants.Parameters;
-import fr.paris.lutece.portal.web.pluginaction.DefaultPluginActionResult;
 import fr.paris.lutece.portal.web.upload.MultipartHttpServletRequest;
 import fr.paris.lutece.portal.web.util.LocalizedPaginator;
 import fr.paris.lutece.util.ReferenceItem;
@@ -98,8 +101,6 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 
-import java.io.IOException;
-import java.io.PrintWriter;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -112,14 +113,14 @@ import jakarta.enterprise.context.SessionScoped;
 import jakarta.inject.Inject;
 import jakarta.inject.Named;
 import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 
 /**
  * This class provides the user interface to manage roles features ( manage, create, modify, remove )
  */
 @SessionScoped
 @Named( "mylutecedatabase_databaseJspBean" )
-public class DatabaseJspBean extends PluginAdminPageJspBean
+@Controller( controllerJsp = DatabaseJspBean.CONTROLLER_JSP, controllerPath = DatabaseJspBean.CONTROLLER_PATH, right = DatabaseJspBean.RIGHT_MANAGE_DATABASE_USERS, securityTokenEnabled = true )
+public class DatabaseJspBean extends MVCAdminJspBean
 {
     // Right
     /**
@@ -131,31 +132,58 @@ public class DatabaseJspBean extends PluginAdminPageJspBean
      * Serial version UID
      */
     private static final long serialVersionUID = -8867524349892775919L;
-    private static final String ATTRIBUTE_IMPORT_USERS_LIST_MESSAGES = "importUsersListMessages";
 
     // Contants
-    private static final String MANAGE_USERS = "ManageUsers.jsp";
     private static final String REGEX_DATABASE_USER_ID = "^[\\d]+$";
-    private static final String QUESTION_MARK = "?";
-    private static final String AMPERSAND = "&";
-    private static final String EQUAL = "=";
+    private static final String PARAMETER_ACTIVE = "active";
+    private static final String SESSION_IMPORT_USERS_LIST_MESSAGES = "mylutece-database.importUsersListMessages";
 
-    // JSP
-    private static final String JSP_DO_REMOVE_USER = "jsp/admin/plugins/mylutece/modules/database/DoRemoveUser.jsp";
-    private static final String JSP_MANAGE_ADVANCED_PARAMETERS = "ManageAdvancedParameters.jsp";
-    private static final String JSP_URL_MODIFY_USER = "jsp/admin/plugins/mylutece/modules/database/ModifyUser.jsp";
-    private static final String JSP_URL_MANAGE_ROLES_USER = "jsp/admin/plugins/mylutece/modules/database/ManageRolesUser.jsp";
-    private static final String JSP_URL_MANAGE_GROUPS_USER = "jsp/admin/plugins/mylutece/modules/database/ManageGroupsUser.jsp";
-    private static final String JSP_MODIFY_USER = "ModifyUser.jsp";
-    private static final String JSP_MANAGE_ROLES_USER = "ManageRolesUser.jsp";
-    private static final String JSP_MANAGE_GROUPS_USER = "ManageGroupsUser.jsp";
-    private static final String JSP_MANAGE_USERS = "ManageUsers.jsp";
-    private static final String JSP_URL_USE_ADVANCED_SECUR_PARAM = "jsp/admin/plugins/mylutece/modules/database/DoUseAdvancedSecurityParameters.jsp";
-    private static final String JSP_URL_REMOVE_ADVANCED_SECUR_PARAM = "jsp/admin/plugins/mylutece/modules/database/DoRemoveAdvancedSecurityParameters.jsp";
-    private static final String JSP_URL_ANONYMIZE_USER = "jsp/admin/plugins/mylutece/modules/database/DoAnonymizeUser.jsp";
-    private static final String JSP_URL_CREATE_USER = "jsp/admin/plugins/mylutece/modules/database/CreateUser.jsp";
-    private static final String JSP_URL_MANAGE_USERS = "jsp/admin/plugins/mylutece/modules/database/ManageUsers.jsp";
-    private static final String JSP_URL_IMPORT_USERS_FROM_FILE = "jsp/admin/plugins/mylutece/modules/database/ImportUsersFromFile.jsp";
+    // Controller
+    static final String CONTROLLER_JSP = "ManageUsers.jsp";
+    static final String CONTROLLER_PATH = "jsp/admin/plugins/mylutece/modules/database/";
+    private static final String CONTROLLER_URL = CONTROLLER_PATH + CONTROLLER_JSP;
+
+    // Views
+    static final String VIEW_MANAGE_USERS = "manageUsers";
+    static final String VIEW_CREATE_USER = "createUser";
+    static final String VIEW_MODIFY_USER = "modifyUser";
+    static final String VIEW_CONFIRM_REMOVE_USER = "confirmRemoveUser";
+    static final String VIEW_MANAGE_ROLES_USER = "manageRolesUser";
+    static final String VIEW_MANAGE_GROUPS_USER = "manageGroupsUser";
+    static final String VIEW_MANAGE_ADVANCED_PARAMETERS = "manageAdvancedParameters";
+    static final String VIEW_CONFIRM_CHANGE_USE_ADVANCED_SECURITY_PARAMETERS = "confirmChangeUseAdvancedSecurityParameters";
+    static final String VIEW_CHANGE_FIELD_ANONYMIZE_USERS = "changeFieldAnonymizeUsers";
+    static final String VIEW_CONFIRM_ANONYMIZE_USER = "confirmAnonymizeUser";
+    static final String VIEW_MODIFY_ACCOUNT_LIFE_TIME_EMAILS = "modifyAccountLifeTimeEmails";
+    static final String VIEW_IMPORT_USERS_FROM_FILE = "importUsersFromFile";
+    static final String VIEW_EXPORT_USERS = "exportUsers";
+
+    // Actions
+    static final String ACTION_CREATE_USER = "createUser";
+    static final String ACTION_MODIFY_USER = "modifyUser";
+    static final String ACTION_REMOVE_USER = "removeUser";
+    static final String ACTION_CHANGE_USER_STATUS = "changeUserStatus";
+    static final String ACTION_ASSIGN_ROLE_USER = "assignRoleUser";
+    static final String ACTION_ASSIGN_GROUPS_USER = "assignGroupsUser";
+    static final String ACTION_MODIFY_DATABASE_USER_PARAMETERS = "modifyDatabaseUserParameters";
+    static final String ACTION_CHANGE_USE_ADVANCED_SECURITY_PARAMETERS = "changeUseAdvancedSecurityParameters";
+    static final String ACTION_CHANGE_FIELD_ANONYMIZE_USERS = "changeFieldAnonymizeUsers";
+    static final String ACTION_ANONYMIZE_USER = "anonymizeUser";
+    static final String ACTION_MODIFY_ACCOUNT_LIFE_TIME_EMAILS = "modifyAccountLifeTimeEmails";
+    static final String ACTION_IMPORT_USERS_FROM_FILE = "importUsersFromFile";
+    static final String ACTION_EXPORT_USERS = "exportUsers";
+
+    // URL of the views and actions of this controller
+    private static final String JSP_URL_DO_REMOVE_USER = CONTROLLER_URL + "?action=" + ACTION_REMOVE_USER;
+    private static final String JSP_URL_DO_CHANGE_USE_ADVANCED_SECUR_PARAM = CONTROLLER_URL + "?action=" + ACTION_CHANGE_USE_ADVANCED_SECURITY_PARAMETERS;
+    private static final String JSP_URL_DO_ANONYMIZE_USER = CONTROLLER_URL + "?action=" + ACTION_ANONYMIZE_USER;
+    private static final String JSP_URL_MODIFY_USER = CONTROLLER_URL + "?view=" + VIEW_MODIFY_USER;
+    private static final String JSP_URL_MANAGE_ROLES_USER = CONTROLLER_URL + "?view=" + VIEW_MANAGE_ROLES_USER;
+    private static final String JSP_URL_MANAGE_GROUPS_USER = CONTROLLER_URL + "?view=" + VIEW_MANAGE_GROUPS_USER;
+    private static final String JSP_URL_CREATE_USER = CONTROLLER_URL + "?view=" + VIEW_CREATE_USER;
+    private static final String JSP_URL_MANAGE_USERS = CONTROLLER_URL;
+    private static final String JSP_URL_IMPORT_USERS_FROM_FILE = CONTROLLER_URL + "?view=" + VIEW_IMPORT_USERS_FROM_FILE;
+    private static final String JSP_MANAGE_ADVANCED_PARAMETERS = CONTROLLER_JSP + "?view=" + VIEW_MANAGE_ADVANCED_PARAMETERS;
 
     // Propety
     private static final String PROPERTY_PAGE_TITLE_MANAGE_USERS = "module.mylutece.database.manage_users.pageTitle";
@@ -302,9 +330,6 @@ public class DatabaseJspBean extends PluginAdminPageJspBean
     private static final String CONSTANT_MIME_TYPE_TEXT_CSV = "text/csv";
     private static final String CONSTANT_MIME_TYPE_OCTETSTREAM = "application/octet-stream";
     private static final String CONSTANT_EXPORT_USERS_FILE_NAME = "users";
-    private static final String CONSTANT_QUOTE = "\"";
-    private static final String CONSTANT_ATTACHEMENT_FILE_NAME = "attachement; filename=\"";
-    private static final String CONSTANT_ATTACHEMENT_DISPOSITION = "Content-Disposition";
 
     // Variables
     private int _nItemsPerPage;
@@ -324,6 +349,9 @@ public class DatabaseJspBean extends PluginAdminPageJspBean
     private IAnonymizationService _anonymizationService;
     @Inject
     private DatabaseUserKeyService _userKeyService;
+    @Inject
+    private Models _models;
+    private String _strPageTitleProperty;
 
     /**
      * Returns users management form
@@ -332,6 +360,7 @@ public class DatabaseJspBean extends PluginAdminPageJspBean
      *            The Http request
      * @return Html form
      */
+    @View( value = VIEW_MANAGE_USERS, defaultView = true, securityTokenAction = ACTION_CHANGE_USER_STATUS )
     public String getManageUsers( HttpServletRequest request )
     {
         setPageTitleProperty( PROPERTY_PAGE_TITLE_MANAGE_USERS );
@@ -394,9 +423,7 @@ public class DatabaseJspBean extends PluginAdminPageJspBean
         model.put( MARK_EXTERNAL_APPLICATION_EXIST, applicationsExist );
         model.put( MARK_PERMISSION_ADVANCED_PARAMETER, bPermissionAdvancedParameter );
 
-        HtmlTemplate template = AppTemplateService.getTemplate( TEMPLATE_MANAGE_USERS, getLocale( ), model );
-
-        return getAdminPage( template.getHtml( ) );
+        return getPageWithToken( TEMPLATE_MANAGE_USERS, model );
     }
 
     /**
@@ -406,6 +433,7 @@ public class DatabaseJspBean extends PluginAdminPageJspBean
      *            The Http request
      * @return Html creation form
      */
+    @View( value = VIEW_CREATE_USER, securityTokenAction = ACTION_CREATE_USER )
     public String getCreateUser( HttpServletRequest request )
     {
         setPageTitleProperty( PROPERTY_PAGE_TITLE_CREATE_USER );
@@ -428,9 +456,7 @@ public class DatabaseJspBean extends PluginAdminPageJspBean
         model.put( MARK_LOCALE, getLocale( ) );
         model.put( MARK_SHOW_INPUT_LOGIN, !_userFactory.isEmailUsedAsLogin( ) );
 
-        HtmlTemplate template = AppTemplateService.getTemplate( TEMPLATE_CREATE_USER, getLocale( ), model );
-
-        return getAdminPage( template.getHtml( ) );
+        return getPageWithToken( TEMPLATE_CREATE_USER, model );
     }
 
     /**
@@ -440,11 +466,12 @@ public class DatabaseJspBean extends PluginAdminPageJspBean
      *            The Http request
      * @return The user's Displaying Url
      */
+    @Action( ACTION_CREATE_USER )
     public String doCreateUser( HttpServletRequest request )
     {
         if ( request.getParameter( PARAMETER_CANCEL ) != null )
         {
-            return MANAGE_USERS + "?" + PARAMETER_PLUGIN_NAME + "=" + getPlugin( ).getName( );
+            return redirect( request, getManageUsersUrl( ) );
         }
 
         String strError = StringUtils.EMPTY;
@@ -499,7 +526,7 @@ public class DatabaseJspBean extends PluginAdminPageJspBean
 
         if ( StringUtils.isNotBlank( strError ) )
         {
-            return strError;
+            return redirect( request, strError );
         }
 
         DatabaseUser databaseUser = _userFactory.newDatabaseUser( );
@@ -513,7 +540,7 @@ public class DatabaseJspBean extends PluginAdminPageJspBean
         _databaseService.doModifyResetPassword( databaseUser, true, getPlugin( ) );
         MyLuteceUserFieldService.doCreateUserFields( databaseUser.getUserId( ), request, getLocale( ) );
 
-        return MANAGE_USERS + "?" + PARAMETER_PLUGIN_NAME + "=" + getPlugin( ).getName( );
+        return redirect( request, getManageUsersUrl( ) );
     }
 
     /**
@@ -523,6 +550,7 @@ public class DatabaseJspBean extends PluginAdminPageJspBean
      *            The Http request
      * @return Html modification form
      */
+    @View( value = VIEW_MODIFY_USER, securityTokenAction = ACTION_MODIFY_USER )
     public String getModifyUser( HttpServletRequest request )
     {
         setPageTitleProperty( PROPERTY_PAGE_TITLE_MODIFY_USER );
@@ -531,7 +559,7 @@ public class DatabaseJspBean extends PluginAdminPageJspBean
 
         if ( selectedUser == null )
         {
-            return getCreateUser( request );
+            return redirectView( request, VIEW_MANAGE_USERS );
         }
 
         // ITEM NAVIGATION
@@ -573,9 +601,7 @@ public class DatabaseJspBean extends PluginAdminPageJspBean
         model.put( MARK_MAP_LIST_ATTRIBUTE_DEFAULT_VALUES, map );
         model.put( MARK_SHOW_INPUT_LOGIN, !_userFactory.isEmailUsedAsLogin( ) );
 
-        HtmlTemplate template = AppTemplateService.getTemplate( TEMPLATE_MODIFY_USER, getLocale( ), model );
-
-        return getAdminPage( template.getHtml( ) );
+        return getPageWithToken( TEMPLATE_MODIFY_USER, model );
     }
 
     /**
@@ -585,13 +611,14 @@ public class DatabaseJspBean extends PluginAdminPageJspBean
      *            The Http request
      * @return The user's Displaying Url
      */
+    @Action( ACTION_MODIFY_USER )
     public String doModifyUser( HttpServletRequest request )
     {
         String strActionCancel = request.getParameter( PARAMETER_CANCEL );
 
         if ( strActionCancel != null )
         {
-            return JSP_MANAGE_USERS;
+            return redirect( request, getManageUsersUrl( ) );
         }
 
         String strError;
@@ -611,16 +638,16 @@ public class DatabaseJspBean extends PluginAdminPageJspBean
 
         if ( StringUtils.isBlank( strLogin ) || StringUtils.isBlank( strLastName ) || StringUtils.isBlank( strFirstName ) || StringUtils.isBlank( strEmail ) )
         {
-            return AdminMessageService.getMessageUrlReturningTo( request, Messages.MANDATORY_FIELDS, AdminMessage.TYPE_STOP,
-                    getModifyUserReturnUrl( request, NumberUtils.toInt( request.getParameter( PARAMETER_MYLUTECE_DATABASE_USER_ID ) ) ) );
+            return redirect( request, AdminMessageService.getMessageUrlReturningTo( request, Messages.MANDATORY_FIELDS, AdminMessage.TYPE_STOP,
+                    getModifyUserReturnUrl( request, NumberUtils.toInt( request.getParameter( PARAMETER_MYLUTECE_DATABASE_USER_ID ) ) ) ) );
         }
 
         DatabaseUser databaseUser = getDatabaseUserFromRequest( request );
 
         if ( databaseUser == null )
         {
-            return AdminMessageService.getMessageUrlReturningTo( request, MESSAGE_ERROR_MODIFY_USER, AdminMessage.TYPE_ERROR,
-                    getManageUsersReturnUrl( request ) );
+            return redirect( request, AdminMessageService.getMessageUrlReturningTo( request, MESSAGE_ERROR_MODIFY_USER, AdminMessage.TYPE_ERROR,
+                    getManageUsersReturnUrl( request ) ) );
         }
         else
             if ( !databaseUser.getLogin( ).equalsIgnoreCase( strLogin )
@@ -643,7 +670,7 @@ public class DatabaseJspBean extends PluginAdminPageJspBean
 
         if ( StringUtils.isNotBlank( strError ) )
         {
-            return strError;
+            return redirect( request, strError );
         }
 
         databaseUser.setEmail( strEmail );
@@ -654,8 +681,7 @@ public class DatabaseJspBean extends PluginAdminPageJspBean
         _databaseService.doUpdateUser( databaseUser, getPlugin( ) );
         MyLuteceUserFieldService.doModifyUserFields( databaseUser.getUserId( ), request, getLocale( ), getUser( ) );
 
-        return JSP_MODIFY_USER + QUESTION_MARK + PARAMETER_PLUGIN_NAME + EQUAL + getPlugin( ).getName( ) + AMPERSAND + PARAMETER_MYLUTECE_DATABASE_USER_ID + EQUAL
-                + databaseUser.getUserId( );
+        return redirect( request, getUserViewUrl( VIEW_MODIFY_USER, databaseUser.getUserId( ) ) );
     }
 
     /**
@@ -665,13 +691,14 @@ public class DatabaseJspBean extends PluginAdminPageJspBean
      *            The Http request
      * @return Html form
      */
+    @View( value = VIEW_CONFIRM_REMOVE_USER, securityTokenAction = ACTION_REMOVE_USER )
     public String getRemoveUser( HttpServletRequest request )
     {
-        UrlItem url = new UrlItem( JSP_DO_REMOVE_USER );
+        UrlItem url = new UrlItem( JSP_URL_DO_REMOVE_USER );
         url.addParameter( PARAMETER_PLUGIN_NAME, getPlugin( ).getName( ) );
         url.addParameter( PARAMETER_MYLUTECE_DATABASE_USER_ID, request.getParameter( PARAMETER_MYLUTECE_DATABASE_USER_ID ) );
 
-        return AdminMessageService.getMessageUrl( request, MESSAGE_CONFIRM_REMOVE_USER, url.getUrl( ), AdminMessage.TYPE_CONFIRMATION );
+        return redirect( request, AdminMessageService.getMessageUrl( request, MESSAGE_CONFIRM_REMOVE_USER, url.getUrl( ), AdminMessage.TYPE_CONFIRMATION ) );
     }
 
     /**
@@ -681,14 +708,15 @@ public class DatabaseJspBean extends PluginAdminPageJspBean
      *            The Http request
      * @return The Jsp management URL of the process result
      */
+    @Action( ACTION_REMOVE_USER )
     public String doRemoveUser( HttpServletRequest request )
     {
         DatabaseUser user = getDatabaseUserFromRequest( request );
 
         if ( user == null )
         {
-            return AdminMessageService.getMessageUrlReturningTo( request, MESSAGE_ERROR_REMOVE_USER, AdminMessage.TYPE_ERROR,
-                    getManageUsersReturnUrl( request ) );
+            return redirect( request, AdminMessageService.getMessageUrlReturningTo( request, MESSAGE_ERROR_REMOVE_USER, AdminMessage.TYPE_ERROR,
+                    getManageUsersReturnUrl( request ) ) );
         }
 
         DatabaseUserHome.remove( user, getPlugin( ) );
@@ -697,7 +725,7 @@ public class DatabaseJspBean extends PluginAdminPageJspBean
         MyLuteceUserFieldService.doRemoveUserFields( user.getUserId( ), request, getLocale( ) );
         _userKeyService.removeByIdUser( user.getUserId( ) );
 
-        return MANAGE_USERS + "?" + PARAMETER_PLUGIN_NAME + "=" + getPlugin( ).getName( );
+        return redirect( request, getManageUsersUrl( ) );
     }
 
     /**
@@ -707,6 +735,7 @@ public class DatabaseJspBean extends PluginAdminPageJspBean
      *            The Http request
      * @return Html form
      */
+    @View( value = VIEW_MANAGE_ROLES_USER, securityTokenAction = ACTION_ASSIGN_ROLE_USER )
     public String getManageRolesUser( HttpServletRequest request )
     {
         AdminUser adminUser = getUser( );
@@ -717,7 +746,7 @@ public class DatabaseJspBean extends PluginAdminPageJspBean
 
         if ( selectedUser == null )
         {
-            return getManageUsers( request );
+            return redirectView( request, VIEW_MANAGE_USERS );
         }
 
         Collection<Role> allRoleList = RoleHome.findAll( );
@@ -751,9 +780,7 @@ public class DatabaseJspBean extends PluginAdminPageJspBean
         model.put( MARK_EXTERNAL_APPLICATION_EXIST, applicationsExist );
         model.put( MARK_ITEM_NAVIGATOR, _itemNavigators.get( PARAMETER_ASSIGN_ROLE ) );
 
-        HtmlTemplate template = AppTemplateService.getTemplate( TEMPLATE_MANAGE_ROLES_USER, getLocale( ), model );
-
-        return getAdminPage( template.getHtml( ) );
+        return getPageWithToken( TEMPLATE_MANAGE_ROLES_USER, model );
     }
 
     /**
@@ -763,6 +790,7 @@ public class DatabaseJspBean extends PluginAdminPageJspBean
      *            The Http request
      * @return Html form
      */
+    @Action( ACTION_ASSIGN_ROLE_USER )
     public String doAssignRoleUser( HttpServletRequest request )
     {
         String strReturn;
@@ -771,7 +799,7 @@ public class DatabaseJspBean extends PluginAdminPageJspBean
 
         if ( strActionCancel != null )
         {
-            strReturn = JSP_MANAGE_USERS;
+            strReturn = getManageUsersUrl( );
         }
         else
         {
@@ -780,8 +808,8 @@ public class DatabaseJspBean extends PluginAdminPageJspBean
 
             if ( user == null )
             {
-                return AdminMessageService.getMessageUrlReturningTo( request, MESSAGE_ERROR_MANAGE_ROLES, AdminMessage.TYPE_ERROR,
-                        getManageUsersReturnUrl( request ) );
+                return redirect( request, AdminMessageService.getMessageUrlReturningTo( request, MESSAGE_ERROR_MANAGE_ROLES, AdminMessage.TYPE_ERROR,
+                        getManageUsersReturnUrl( request ) ) );
             }
 
             String [ ] roleArray = request.getParameterValues( PARAMETER_MYLUTECE_DATABASE_ROLE_ID );
@@ -796,11 +824,10 @@ public class DatabaseJspBean extends PluginAdminPageJspBean
                 }
             }
 
-            strReturn = JSP_MANAGE_ROLES_USER + QUESTION_MARK + PARAMETER_PLUGIN_NAME + EQUAL + getPlugin( ).getName( ) + AMPERSAND
-                    + PARAMETER_MYLUTECE_DATABASE_USER_ID + EQUAL + user.getUserId( );
+            strReturn = getUserViewUrl( VIEW_MANAGE_ROLES_USER, user.getUserId( ) );
         }
 
-        return strReturn;
+        return redirect( request, strReturn );
     }
 
     /**
@@ -810,6 +837,7 @@ public class DatabaseJspBean extends PluginAdminPageJspBean
      *            The Http request
      * @return Html form
      */
+    @View( value = VIEW_MANAGE_GROUPS_USER, securityTokenAction = ACTION_ASSIGN_GROUPS_USER )
     public String getManageGroupsUser( HttpServletRequest request )
     {
         AdminUser adminUser = getUser( );
@@ -820,7 +848,7 @@ public class DatabaseJspBean extends PluginAdminPageJspBean
 
         if ( selectedUser == null )
         {
-            return getManageUsers( request );
+            return redirectView( request, VIEW_MANAGE_USERS );
         }
 
         Collection<Group> allGroupList = GroupHome.findAll( getPlugin( ) );
@@ -877,9 +905,7 @@ public class DatabaseJspBean extends PluginAdminPageJspBean
         model.put( MARK_EXTERNAL_APPLICATION_EXIST, applicationsExist );
         model.put( MARK_ITEM_NAVIGATOR, _itemNavigators.get( PARAMETER_ASSIGN_GROUP ) );
 
-        HtmlTemplate template = AppTemplateService.getTemplate( TEMPLATE_MANAGE_GROUPS_USER, getLocale( ), model );
-
-        return getAdminPage( template.getHtml( ) );
+        return getPageWithToken( TEMPLATE_MANAGE_GROUPS_USER, model );
     }
 
     /**
@@ -889,6 +915,7 @@ public class DatabaseJspBean extends PluginAdminPageJspBean
      *            The Http request
      * @return Html form
      */
+    @Action( ACTION_ASSIGN_GROUPS_USER )
     public String doAssignGroupsUser( HttpServletRequest request )
     {
         String strReturn;
@@ -897,7 +924,7 @@ public class DatabaseJspBean extends PluginAdminPageJspBean
 
         if ( strActionCancel != null )
         {
-            strReturn = JSP_MANAGE_USERS;
+            strReturn = getManageUsersUrl( );
         }
         else
         {
@@ -906,8 +933,8 @@ public class DatabaseJspBean extends PluginAdminPageJspBean
 
             if ( user == null )
             {
-                return AdminMessageService.getMessageUrlReturningTo( request, MESSAGE_ERROR_MANAGE_GROUPS, AdminMessage.TYPE_ERROR,
-                        getManageUsersReturnUrl( request ) );
+                return redirect( request, AdminMessageService.getMessageUrlReturningTo( request, MESSAGE_ERROR_MANAGE_GROUPS, AdminMessage.TYPE_ERROR,
+                        getManageUsersReturnUrl( request ) ) );
             }
 
             String [ ] groupArray = request.getParameterValues( PARAMETER_MYLUTECE_DATABASE_GROUP_KEY );
@@ -922,11 +949,10 @@ public class DatabaseJspBean extends PluginAdminPageJspBean
                 }
             }
 
-            strReturn = JSP_MANAGE_GROUPS_USER + QUESTION_MARK + PARAMETER_PLUGIN_NAME + EQUAL + getPlugin( ).getName( ) + AMPERSAND
-                    + PARAMETER_MYLUTECE_DATABASE_USER_ID + EQUAL + user.getUserId( );
+            strReturn = getUserViewUrl( VIEW_MANAGE_GROUPS_USER, user.getUserId( ) );
         }
 
-        return strReturn;
+        return redirect( request, strReturn );
     }
 
     /**
@@ -1026,43 +1052,18 @@ public class DatabaseJspBean extends PluginAdminPageJspBean
      *            The Http request
      * @return Html form
      */
+    @View( value = VIEW_MANAGE_ADVANCED_PARAMETERS, securityTokenAction = ACTION_MODIFY_DATABASE_USER_PARAMETERS )
     public String getManageAdvancedParameters( HttpServletRequest request )
     {
         if ( !RBACService.isAuthorized( DatabaseResourceIdService.RESOURCE_TYPE, RBAC.WILDCARD_RESOURCES_ID, DatabaseResourceIdService.PERMISSION_MANAGE,
                 (User) getUser( ) ) )
         {
-            return getManageUsers( request );
+            return redirectView( request, VIEW_MANAGE_USERS );
         }
 
         Map<String, Object> model = _databaseService.getManageAdvancedParameters( getUser( ) );
 
-        HtmlTemplate template = AppTemplateService.getTemplate( TEMPLATE_MANAGE_ADVANCED_PARAMETERS, getLocale( ), model );
-
-        return getAdminPage( template.getHtml( ) );
-    }
-
-    /**
-     * Do activate the user
-     * 
-     * @param request
-     *            the Http
-     * @return the jsp home
-     */
-    public String doActivateUser( HttpServletRequest request )
-    {
-        return doChangeUserStatus( request, true );
-    }
-
-    /**
-     * Do deactivate the user
-     * 
-     * @param request
-     *            the HTTP request
-     * @return the JSP home
-     */
-    public String doDeactivateUser( HttpServletRequest request )
-    {
-        return doChangeUserStatus( request, false );
+        return getPageWithToken( TEMPLATE_MANAGE_ADVANCED_PARAMETERS, model );
     }
 
     /**
@@ -1074,6 +1075,7 @@ public class DatabaseJspBean extends PluginAdminPageJspBean
      * @throws AccessDeniedException
      *             access denied if the user does not have the right
      */
+    @Action( ACTION_MODIFY_DATABASE_USER_PARAMETERS )
     public String doModifyDatabaseUserParameters( HttpServletRequest request ) throws AccessDeniedException
     {
         if ( !RBACService.isAuthorized( DatabaseResourceIdService.RESOURCE_TYPE, RBAC.WILDCARD_RESOURCES_ID, DatabaseResourceIdService.PERMISSION_MANAGE,
@@ -1097,7 +1099,7 @@ public class DatabaseJspBean extends PluginAdminPageJspBean
             SecurityUtils.updateParameterValue( _userParamService, getPlugin( ), PARAMETER_ENABLE_JCAPTCHA, request.getParameter( PARAMETER_ENABLE_JCAPTCHA ) );
         }
 
-        return JSP_MANAGE_ADVANCED_PARAMETERS;
+        return redirect( request, JSP_MANAGE_ADVANCED_PARAMETERS );
     }
 
     /**
@@ -1109,8 +1111,10 @@ public class DatabaseJspBean extends PluginAdminPageJspBean
      *            true if the user must be changed to active, false otherwise
      * @return the JSP home
      */
-    private String doChangeUserStatus( HttpServletRequest request, boolean bIsActive )
+    @Action( ACTION_CHANGE_USER_STATUS )
+    public String doChangeUserStatus( HttpServletRequest request )
     {
+        boolean bIsActive = Boolean.parseBoolean( request.getParameter( PARAMETER_ACTIVE ) );
         DatabaseUser databaseUser = getDatabaseUserFromRequest( request );
 
         if ( databaseUser != null )
@@ -1122,7 +1126,7 @@ public class DatabaseJspBean extends PluginAdminPageJspBean
             _userKeyService.removeByIdUser( databaseUser.getUserId( ) );
         }
 
-        return MANAGE_USERS + "?" + PARAMETER_PLUGIN_NAME + "=" + getPlugin( ).getName( );
+        return redirect( request, getManageUsersUrl( ) );
     }
 
     /**
@@ -1203,43 +1207,39 @@ public class DatabaseJspBean extends PluginAdminPageJspBean
      *            The request
      * @return The url of the admin message
      */
+    @View( value = VIEW_CONFIRM_CHANGE_USE_ADVANCED_SECURITY_PARAMETERS, securityTokenAction = ACTION_CHANGE_USE_ADVANCED_SECURITY_PARAMETERS )
     public String getChangeUseAdvancedSecurityParameters( HttpServletRequest request )
     {
         if ( SecurityUtils.isAdvancedSecurityParametersUsed( _userParamService, getPlugin( ) ) )
         {
-            return AdminMessageService.getMessageUrl( request, PROPERTY_MESSAGE_CONFIRM_REMOVE_ASP, JSP_URL_REMOVE_ADVANCED_SECUR_PARAM,
-                    AdminMessage.TYPE_CONFIRMATION );
+            return redirect( request, AdminMessageService.getMessageUrl( request, PROPERTY_MESSAGE_CONFIRM_REMOVE_ASP, JSP_URL_DO_CHANGE_USE_ADVANCED_SECUR_PARAM,
+                    AdminMessage.TYPE_CONFIRMATION ) );
         }
 
-        return AdminMessageService.getMessageUrl( request, PROPERTY_MESSAGE_CONFIRM_USE_ASP, JSP_URL_USE_ADVANCED_SECUR_PARAM, AdminMessage.TYPE_CONFIRMATION );
+        return redirect( request, AdminMessageService.getMessageUrl( request, PROPERTY_MESSAGE_CONFIRM_USE_ASP, JSP_URL_DO_CHANGE_USE_ADVANCED_SECUR_PARAM,
+                AdminMessage.TYPE_CONFIRMATION ) );
     }
 
     /**
-     * Enable advanced security parameters, and change users password if password encryption change
+     * Uses the advanced security parameters when they are not used, removes them otherwise (the confirmation said which)
      * 
      * @param request
      *            The request
      * @return The Jsp URL of the process result
      */
-    public String doUseAdvancedSecurityParameters( HttpServletRequest request )
+    @Action( ACTION_CHANGE_USE_ADVANCED_SECURITY_PARAMETERS )
+    public String doChangeUseAdvancedSecurityParameters( HttpServletRequest request )
     {
-        SecurityUtils.useAdvancedSecurityParameters( _userParamService, getPlugin( ) );
+        if ( SecurityUtils.isAdvancedSecurityParametersUsed( _userParamService, getPlugin( ) ) )
+        {
+            SecurityUtils.removeAdvancedSecurityParameters( _userParamService, getPlugin( ) );
+        }
+        else
+        {
+            SecurityUtils.useAdvancedSecurityParameters( _userParamService, getPlugin( ) );
+        }
 
-        return JSP_MANAGE_ADVANCED_PARAMETERS;
-    }
-
-    /**
-     * Disable advanced security parameters
-     * 
-     * @param request
-     *            The request
-     * @return The Jsp URL of the process result
-     */
-    public String doRemoveAdvancedSecurityParameters( HttpServletRequest request )
-    {
-        SecurityUtils.removeAdvancedSecurityParameters( _userParamService, getPlugin( ) );
-
-        return JSP_MANAGE_ADVANCED_PARAMETERS;
+        return redirect( request, JSP_MANAGE_ADVANCED_PARAMETERS );
     }
 
     /**
@@ -1249,6 +1249,7 @@ public class DatabaseJspBean extends PluginAdminPageJspBean
      *            The request
      * @return The admin page
      */
+    @View( value = VIEW_CHANGE_FIELD_ANONYMIZE_USERS, securityTokenAction = ACTION_CHANGE_FIELD_ANONYMIZE_USERS )
     public String getChangeFieldAnonymizeAdminUsers( HttpServletRequest request )
     {
         Map<String, Object> model = new HashMap<>( );
@@ -1270,9 +1271,7 @@ public class DatabaseJspBean extends PluginAdminPageJspBean
 
         setPageTitleProperty( PROPERTY_MESSAGE_TITLE_CHANGE_ANONYMIZE_USER );
 
-        HtmlTemplate template = AppTemplateService.getTemplate( TEMPLATE_FIELD_ANONYMIZE_USER, getLocale( ), model );
-
-        return getAdminPage( template.getHtml( ) );
+        return getPageWithToken( TEMPLATE_FIELD_ANONYMIZE_USER, model );
     }
 
     /**
@@ -1282,11 +1281,12 @@ public class DatabaseJspBean extends PluginAdminPageJspBean
      *            The request
      * @return the Jsp URL of the process result
      */
+    @Action( ACTION_CHANGE_FIELD_ANONYMIZE_USERS )
     public String doChangeFieldAnonymizeUsers( HttpServletRequest request )
     {
         if ( request.getParameter( PARAMETER_CANCEL ) != null )
         {
-            return JSP_MANAGE_ADVANCED_PARAMETERS;
+            return redirect( request, JSP_MANAGE_ADVANCED_PARAMETERS );
         }
 
         Plugin pluginMyLutece = PluginService.getPlugin( MyLutecePlugin.PLUGIN_NAME );
@@ -1314,7 +1314,7 @@ public class DatabaseJspBean extends PluginAdminPageJspBean
             AttributeHome.updateAttributeAnonymization( attribute.getIdAttribute( ), bNewValue, pluginMyLutece );
         }
 
-        return JSP_MANAGE_ADVANCED_PARAMETERS;
+        return redirect( request, JSP_MANAGE_ADVANCED_PARAMETERS );
     }
 
     /**
@@ -1324,21 +1324,22 @@ public class DatabaseJspBean extends PluginAdminPageJspBean
      *            The request
      * @return The URL of the confirmation page
      */
+    @View( value = VIEW_CONFIRM_ANONYMIZE_USER, securityTokenAction = ACTION_ANONYMIZE_USER )
     public String getAnonymizeUser( HttpServletRequest request )
     {
-        UrlItem url = new UrlItem( JSP_URL_ANONYMIZE_USER );
+        UrlItem url = new UrlItem( JSP_URL_DO_ANONYMIZE_USER );
 
         String strUserId = request.getParameter( PARAMETER_USER_ID );
 
         if ( ( strUserId == null ) || strUserId.isEmpty( ) )
         {
-            return AdminMessageService.getMessageUrlReturningTo( request, PROPERTY_MESSAGE_NO_USER_SELECTED, AdminMessage.TYPE_STOP,
-                    getManageUsersReturnUrl( request ) );
+            return redirect( request, AdminMessageService.getMessageUrlReturningTo( request, PROPERTY_MESSAGE_NO_USER_SELECTED, AdminMessage.TYPE_STOP,
+                    getManageUsersReturnUrl( request ) ) );
         }
 
         url.addParameter( PARAMETER_USER_ID, strUserId );
 
-        return AdminMessageService.getMessageUrl( request, PROPERTY_MESSAGE_CONFIRM_ANONYMIZE_USER, url.getUrl( ), AdminMessage.TYPE_CONFIRMATION );
+        return redirect( request, AdminMessageService.getMessageUrl( request, PROPERTY_MESSAGE_CONFIRM_ANONYMIZE_USER, url.getUrl( ), AdminMessage.TYPE_CONFIRMATION ) );
     }
 
     /**
@@ -1348,19 +1349,20 @@ public class DatabaseJspBean extends PluginAdminPageJspBean
      *            The request
      * @return The Jsp URL of the process result
      */
+    @Action( ACTION_ANONYMIZE_USER )
     public String doAnonymizeUser( HttpServletRequest request )
     {
         String strUserId = request.getParameter( PARAMETER_USER_ID );
 
         if ( ( strUserId == null ) || strUserId.isEmpty( ) )
         {
-            return AdminMessageService.getMessageUrlReturningTo( request, PROPERTY_MESSAGE_NO_USER_SELECTED, AdminMessage.TYPE_STOP,
-                    getManageUsersReturnUrl( request ) );
+            return redirect( request, AdminMessageService.getMessageUrlReturningTo( request, PROPERTY_MESSAGE_NO_USER_SELECTED, AdminMessage.TYPE_STOP,
+                    getManageUsersReturnUrl( request ) ) );
         }
 
         _anonymizationService.anonymizeUser( Integer.parseInt( strUserId ), getLocale( ) );
 
-        return JSP_MANAGE_USERS;
+        return redirect( request, getManageUsersUrl( ) );
     }
 
     /**
@@ -1370,6 +1372,7 @@ public class DatabaseJspBean extends PluginAdminPageJspBean
      *            The request
      * @return The html to display
      */
+    @View( value = VIEW_MODIFY_ACCOUNT_LIFE_TIME_EMAILS, securityTokenAction = ACTION_MODIFY_ACCOUNT_LIFE_TIME_EMAILS )
     public String getModifyAccountLifeTimeEmails( HttpServletRequest request )
     {
         String strEmailType = request.getParameter( PARAMETER_EMAIL_TYPE );
@@ -1451,9 +1454,7 @@ public class DatabaseJspBean extends PluginAdminPageJspBean
         model.put( MARK_WEBAPP_URL, AppPathService.getBaseUrl( request ) );
         model.put( MARK_LOCALE, request.getLocale( ) );
 
-        HtmlTemplate template = AppTemplateService.getTemplate( TEMPLATE_ACCOUNT_LIFE_TIME_EMAIL, getLocale( ), model );
-
-        return getAdminPage( template.getHtml( ) );
+        return getPageWithToken( TEMPLATE_ACCOUNT_LIFE_TIME_EMAIL, model );
     }
 
     /**
@@ -1463,6 +1464,7 @@ public class DatabaseJspBean extends PluginAdminPageJspBean
      *            The request
      * @return The Jsp URL of the process result
      */
+    @Action( ACTION_MODIFY_ACCOUNT_LIFE_TIME_EMAILS )
     public String doModifyAccountLifeTimeEmails( HttpServletRequest request )
     {
         String strEmailType = request.getParameter( PARAMETER_EMAIL_TYPE );
@@ -1524,7 +1526,7 @@ public class DatabaseJspBean extends PluginAdminPageJspBean
         SecurityUtils.updateParameterValue( _userParamService, getPlugin( ), strSubjectKey, request.getParameter( MARK_EMAIL_SUBJECT ) );
         DatabaseTemplateService.updateTemplate( strBodyKey, request.getParameter( MARK_EMAIL_BODY ) );
 
-        return JSP_MANAGE_ADVANCED_PARAMETERS;
+        return redirect( request, JSP_MANAGE_ADVANCED_PARAMETERS );
     }
 
     /**
@@ -1534,19 +1536,22 @@ public class DatabaseJspBean extends PluginAdminPageJspBean
      *            The request
      * @return The HTML content
      */
+    @View( value = VIEW_IMPORT_USERS_FROM_FILE, securityTokenAction = ACTION_IMPORT_USERS_FROM_FILE )
     public String getImportUsersFromFile( HttpServletRequest request )
     {
         if ( !RBACService.isAuthorized( DatabaseResourceIdService.RESOURCE_TYPE, RBAC.WILDCARD_RESOURCES_ID,
                 DatabaseResourceIdService.PERMISSION_IMPORT_EXPORT_DATABASE_USERS, (User) getUser( ) ) )
         {
-            return getManageUsers( request );
+            return redirectView( request, VIEW_MANAGE_USERS );
         }
 
         setPageTitleProperty( PROPERTY_IMPORT_USERS_FROM_FILE_PAGETITLE );
 
         Map<String, Object> model = new HashMap<>( );
 
-        model.put( MARK_LIST_MESSAGES, request.getAttribute( ATTRIBUTE_IMPORT_USERS_LIST_MESSAGES ) );
+        // Messages of the import just done
+        model.put( MARK_LIST_MESSAGES, request.getSession( ).getAttribute( SESSION_IMPORT_USERS_LIST_MESSAGES ) );
+        request.getSession( ).removeAttribute( SESSION_IMPORT_USERS_LIST_MESSAGES );
 
         ImportDatabaseUserService importDatabaseUserService = new ImportDatabaseUserService( );
         String strCsvSeparator = StringUtils.EMPTY + importDatabaseUserService.getCSVSeparator( );
@@ -1556,9 +1561,7 @@ public class DatabaseJspBean extends PluginAdminPageJspBean
         model.put( MARK_CSV_ESCAPE, strCsvEscapeCharacter );
         model.put( MARK_ATTRIBUTES_SEPARATOR, strAttributesSeparator );
 
-        HtmlTemplate template = AppTemplateService.getTemplate( TEMPLATE_IMPORT_USERS_FROM_FILE, AdminUserService.getLocale( request ), model );
-
-        return getAdminPage( template.getHtml( ) );
+        return getPageWithToken( TEMPLATE_IMPORT_USERS_FROM_FILE, model );
     }
 
     /**
@@ -1568,16 +1571,13 @@ public class DatabaseJspBean extends PluginAdminPageJspBean
      *            The request
      * @return A DefaultPluginActionResult with the URL of the page to display, or the HTML content
      */
-    public DefaultPluginActionResult doImportUsersFromFile( HttpServletRequest request )
+    @Action( ACTION_IMPORT_USERS_FROM_FILE )
+    public String doImportUsersFromFile( HttpServletRequest request )
     {
-        DefaultPluginActionResult result = new DefaultPluginActionResult( );
-
         if ( !RBACService.isAuthorized( DatabaseResourceIdService.RESOURCE_TYPE, RBAC.WILDCARD_RESOURCES_ID,
                 DatabaseResourceIdService.PERMISSION_IMPORT_EXPORT_DATABASE_USERS, (User) getUser( ) ) )
         {
-            result.setHtmlContent( getManageUsers( request ) );
-
-            return result;
+            return redirectView( request, VIEW_MANAGE_USERS );
         }
 
         if ( request instanceof MultipartHttpServletRequest )
@@ -1591,19 +1591,15 @@ public class DatabaseJspBean extends PluginAdminPageJspBean
                 Object [ ] tabRequiredFields = {
                         I18nService.getLocalizedString( FIELD_IMPORT_USERS_FILE, getLocale( ) )
                 };
-                result.setRedirect( AdminMessageService.getMessageUrlReturningTo( request, MESSAGE_MANDATORY_FIELD, tabRequiredFields,
+                return redirect( request, AdminMessageService.getMessageUrlReturningTo( request, MESSAGE_MANDATORY_FIELD, tabRequiredFields,
                         AdminMessage.TYPE_STOP, getImportUsersReturnUrl( request ) ) );
-
-                return result;
             }
 
             if ( ( !strMimeType.equals( CONSTANT_MIME_TYPE_CSV ) && !strMimeType.equals( CONSTANT_MIME_TYPE_OCTETSTREAM )
                     && !strMimeType.equals( CONSTANT_MIME_TYPE_TEXT_CSV ) ) || !fileItem.getName( ).toLowerCase( ).endsWith( CONSTANT_EXTENSION_CSV_FILE ) )
             {
-                result.setRedirect( AdminMessageService.getMessageUrlReturningTo( request, MESSAGE_ERROR_CSV_FILE_IMPORT, AdminMessage.TYPE_STOP,
+                return redirect( request, AdminMessageService.getMessageUrlReturningTo( request, MESSAGE_ERROR_CSV_FILE_IMPORT, AdminMessage.TYPE_STOP,
                         getImportUsersReturnUrl( request ) ) );
-
-                return result;
             }
 
             String strSkipFirstLine = multipartRequest.getParameter( PARAMETER_SKIP_FIRST_LINE );
@@ -1617,21 +1613,18 @@ public class DatabaseJspBean extends PluginAdminPageJspBean
             List<CSVMessageDescriptor> listMessages = importDatabaseUserService.readCSVFile( fileItem, 0, false, false, bSkipFirstLine,
                     AdminUserService.getLocale( request ), AppPathService.getBaseUrl( request ) );
 
-            request.setAttribute( ATTRIBUTE_IMPORT_USERS_LIST_MESSAGES, listMessages );
+            request.getSession( ).setAttribute( SESSION_IMPORT_USERS_LIST_MESSAGES, new ArrayList<>( listMessages ) );
 
-            String strHtmlResult = getImportUsersFromFile( request );
-            result.setHtmlContent( strHtmlResult );
+            return redirectView( request, VIEW_IMPORT_USERS_FROM_FILE );
         }
         else
         {
             Object [ ] tabRequiredFields = {
                     I18nService.getLocalizedString( FIELD_IMPORT_USERS_FILE, getLocale( ) )
             };
-            result.setRedirect( AdminMessageService.getMessageUrlReturningTo( request, MESSAGE_MANDATORY_FIELD, tabRequiredFields,
+            return redirect( request, AdminMessageService.getMessageUrlReturningTo( request, MESSAGE_MANDATORY_FIELD, tabRequiredFields,
                     AdminMessage.TYPE_STOP, getImportUsersReturnUrl( request ) ) );
         }
-
-        return result;
     }
 
     /**
@@ -1641,21 +1634,20 @@ public class DatabaseJspBean extends PluginAdminPageJspBean
      *            The request
      * @return The html content
      */
+    @View( value = VIEW_EXPORT_USERS, securityTokenAction = ACTION_EXPORT_USERS )
     public String getExportUsers( HttpServletRequest request )
     {
         if ( !RBACService.isAuthorized( DatabaseResourceIdService.RESOURCE_TYPE, RBAC.WILDCARD_RESOURCES_ID,
                 DatabaseResourceIdService.PERMISSION_IMPORT_EXPORT_DATABASE_USERS, (User) getUser( ) ) )
         {
-            return getManageUsers( request );
+            return redirectView( request, VIEW_MANAGE_USERS );
         }
 
         setPageTitleProperty( PROPERTY_EXPORT_USERS_PAGETITLE );
 
         Map<String, Object> model = new HashMap<>( );
 
-        HtmlTemplate template = AppTemplateService.getTemplate( TEMPLATE_EXPORT_USERS_FROM_FILE, AdminUserService.getLocale( request ), model );
-
-        return getAdminPage( template.getHtml( ) );
+        return getPageWithToken( TEMPLATE_EXPORT_USERS_FROM_FILE, model );
     }
 
     /**
@@ -1669,18 +1661,15 @@ public class DatabaseJspBean extends PluginAdminPageJspBean
      * @throws IOException
      *             If an IOException occurs
      */
-    public DefaultPluginActionResult doExportUsers( HttpServletRequest request, HttpServletResponse response ) throws IOException
+    @Action( ACTION_EXPORT_USERS )
+    public String doExportUsers( HttpServletRequest request )
     {
         Plugin plugin = getPlugin( );
-
-        DefaultPluginActionResult result = new DefaultPluginActionResult( );
 
         if ( !RBACService.isAuthorized( DatabaseResourceIdService.RESOURCE_TYPE, RBAC.WILDCARD_RESOURCES_ID,
                 DatabaseResourceIdService.PERMISSION_IMPORT_EXPORT_DATABASE_USERS, (User) getUser( ) ) )
         {
-            result.setHtmlContent( getManageUsers( request ) );
-
-            return result;
+            return redirectView( request, VIEW_MANAGE_USERS );
         }
 
         String strExportAttributes = request.getParameter( PARAMETER_EXPORT_ATTRIBUTES );
@@ -1708,18 +1697,75 @@ public class DatabaseJspBean extends PluginAdminPageJspBean
         model.put(MARK_EXPORT_USERS, listUserExport);
 
         String strFileName = CONSTANT_EXPORT_USERS_FILE_NAME + CONSTANT_EXTENSION_CSV_FILE;
-        response.setHeader( CONSTANT_ATTACHEMENT_DISPOSITION, CONSTANT_ATTACHEMENT_FILE_NAME + strFileName + CONSTANT_QUOTE );
 
         HtmlTemplate template = AppTemplateService.getTemplate(TEMPLATE_EXPORT_USERS, getLocale(), model);
         String strExportedUsers = template.getHtml();
-        response.setContentType( CONSTANT_MIME_TYPE_CSV );
-
-        PrintWriter out = response.getWriter( );
-        out.write( StringUtils.trim(strExportedUsers) );
-        out.flush( );
-        out.close( );
+        download( StringUtils.trim( strExportedUsers ), strFileName, CONSTANT_MIME_TYPE_CSV );
 
         return null;
+    }
+
+    /**
+     * Gets the page of a view: the model goes to the models of the request, which carry the security token of the view, added to the forms of the page
+     * 
+     * @param strTemplate
+     *            The template
+     * @param model
+     *            The model
+     * @return The page
+     */
+    private String getPageWithToken( String strTemplate, Map<String, Object> model )
+    {
+        model.forEach( ( strKey, value ) -> {
+            if ( value != null )
+            {
+                _models.put( strKey, value );
+            }
+        } );
+
+        return getPage( _strPageTitleProperty, strTemplate );
+    }
+
+    /**
+     * {@inheritDoc} The property is kept for the page built with the token of the view.
+     */
+    @Override
+    public void setPageTitleProperty( String strPageTitleKey )
+    {
+        _strPageTitleProperty = strPageTitleKey;
+        super.setPageTitleProperty( strPageTitleKey );
+    }
+
+    /**
+     * Gets the URL of the list of the users
+     * 
+     * @return The URL
+     */
+    private String getManageUsersUrl( )
+    {
+        UrlItem url = new UrlItem( CONTROLLER_JSP );
+        url.addParameter( PARAMETER_PLUGIN_NAME, getPlugin( ).getName( ) );
+
+        return url.getUrl( );
+    }
+
+    /**
+     * Gets the URL of a view of a user
+     * 
+     * @param strView
+     *            The view
+     * @param nUserId
+     *            The id of the user
+     * @return The URL
+     */
+    private String getUserViewUrl( String strView, int nUserId )
+    {
+        UrlItem url = new UrlItem( CONTROLLER_JSP );
+        url.addParameter( "view", strView );
+        url.addParameter( PARAMETER_PLUGIN_NAME, getPlugin( ).getName( ) );
+        url.addParameter( PARAMETER_MYLUTECE_DATABASE_USER_ID, nUserId );
+
+        return url.getUrl( );
     }
 
     /**

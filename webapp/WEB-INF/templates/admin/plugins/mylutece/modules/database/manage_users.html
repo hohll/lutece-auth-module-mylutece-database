@@ -2,8 +2,8 @@
     <@pageColumn>
 		<@pageHeader title='#i18n{module.mylutece.database.manage_users.tableTitle}'>
 			<#if permission_advanced_parameter?? && permission_advanced_parameter>
-				<@offcanvas id='offcanvasAdvancedParameters' targetUrl='jsp/admin/plugins/mylutece/modules/database/ManageAdvancedParameters.jsp' useIframe=true title='#i18n{module.mylutece.database.manage_users.buttonLabelManageAdvancedParameters}' btnTitle='#i18n{module.mylutece.database.manage_users.buttonLabelManageAdvancedParameters}' btnIcon='cog' btnClass='me-1' hideTitle=['xs','sm'] position='end' size='half' />
-				<@offcanvas id='offcanvasImportExport' targetUrl='jsp/admin/plugins/mylutece/modules/database/ExportUsers.jsp' useIframe=true title='#i18n{module.mylutece.database.manage_users.buttonLabelImportExportUsers}' btnTitle='#i18n{module.mylutece.database.manage_users.buttonLabelImportExportUsers}' btnIcon='users-plus' btnClass='me-1' hideTitle=['xs','sm'] position='end' size='half' />
+				<@offcanvas id='offcanvasAdvancedParameters' targetUrl='jsp/admin/plugins/mylutece/modules/database/ManageUsers.jsp?view=manageAdvancedParameters' useIframe=true title='#i18n{module.mylutece.database.manage_users.buttonLabelManageAdvancedParameters}' btnTitle='#i18n{module.mylutece.database.manage_users.buttonLabelManageAdvancedParameters}' btnIcon='cog' btnClass='me-1' hideTitle=['xs','sm'] position='end' size='half' />
+				<@offcanvas id='offcanvasImportExport' targetUrl='jsp/admin/plugins/mylutece/modules/database/ManageUsers.jsp?view=exportUsers' useIframe=true title='#i18n{module.mylutece.database.manage_users.buttonLabelImportExportUsers}' btnTitle='#i18n{module.mylutece.database.manage_users.buttonLabelImportExportUsers}' btnIcon='users-plus' btnClass='me-1' hideTitle=['xs','sm'] position='end' size='half' />
 			</#if>
 			<@offcanvas id='offcanvasSearch' title='#i18n{module.mylutece.database.user_filter.buttonSearch}' btnTitle='#i18n{module.mylutece.database.user_filter.buttonSearch}' btnIcon='search' btnClass='me-1' hideTitle=['xs','sm'] position='end' size='sm'>
 				<@tform method='post' name='search_users' action='jsp/admin/plugins/mylutece/modules/database/ManageUsers.jsp'>
@@ -25,7 +25,7 @@
 					</@formGroup>
 				</@tform>
 			</@offcanvas>
-			<@offcanvas id='offcanvasCreateUser' targetUrl='jsp/admin/plugins/mylutece/modules/database/CreateUser.jsp?plugin_name=${plugin_name}' useIframe=true title='#i18n{module.mylutece.database.manage_users.btnCreateUser}' btnTitle='#i18n{module.mylutece.database.manage_users.btnCreateUser}' btnIcon='plus' btnColor='primary' hideTitle=['xs','sm'] position='end' size='half' />
+			<@offcanvas id='offcanvasCreateUser' targetUrl='jsp/admin/plugins/mylutece/modules/database/ManageUsers.jsp?view=createUser&plugin_name=${plugin_name}' useIframe=true title='#i18n{module.mylutece.database.manage_users.btnCreateUser}' btnTitle='#i18n{module.mylutece.database.manage_users.btnCreateUser}' btnIcon='plus' btnColor='primary' hideTitle=['xs','sm'] position='end' size='half' />
 		</@pageHeader>
 		<@manageFeature>
 			<#if user_list?size gt 0 >
@@ -39,7 +39,7 @@
 					<@manageFeatureItemColumn align='end'>
 						<@aButton class='dropdown-toggle' id='portlet-type' dropdownMenu=true href='#' title='#i18n{portal.util.labelActions}' color=''  hideTitle=['xs','sm','md'] >
 							<#if user.status != 10>
-								<@offcanvas id='offcanvasModifyUser-${user.userId}' targetUrl='jsp/admin/plugins/mylutece/modules/database/ModifyUser.jsp?plugin_name=${plugin_name}&mylutece_database_user_id=${user.userId}' useIframe=true title='#i18n{module.mylutece.database.manage_users.linkModifyUser}' btnTitle='#i18n{module.mylutece.database.manage_users.linkModifyUser}' btnIcon='' btnColor='link' btnClass='text-body justify-content-start dropdown-item portlet-type-ref' position='end' size='half' />
+								<@offcanvas id='offcanvasModifyUser-${user.userId}' targetUrl='jsp/admin/plugins/mylutece/modules/database/ManageUsers.jsp?view=modifyUser&plugin_name=${plugin_name}&mylutece_database_user_id=${user.userId}' useIframe=true title='#i18n{module.mylutece.database.manage_users.linkModifyUser}' btnTitle='#i18n{module.mylutece.database.manage_users.linkModifyUser}' btnIcon='' btnColor='link' btnClass='text-body justify-content-start dropdown-item portlet-type-ref' position='end' size='half' />
 							</#if>
 							<#if external_application_exist >
 								<@link class='dropdown-item portlet-type-ref' href='jsp/admin/plugins/mylutece/ManageExternalApplicationUser.jsp?mylutece_user_id=${user.login}' label='#i18n{module.mylutece.database.manage_users.linkManageExternalApplication}' />
@@ -48,17 +48,17 @@
 								<@link class='dropdown-item portlet-type-ref disabled' href='#' params={'aria-disabled': 'true'} label='#i18n{mylutece.anonymize_user.statusLabelAnonymize}' />
 							<#else>
 								<#if user.isActive()>
-									<@link class='dropdown-item portlet-type-ref'  href='jsp/admin/plugins/mylutece/modules/database/DoDeactivateUser.jsp?plugin_name=${plugin_name}&mylutece_database_user_id=${user.userId}' label='#i18n{module.mylutece.database.manage_users.linkDeactivateUser}' />
+									<@tform method='post' action='jsp/admin/plugins/mylutece/modules/database/ManageUsers.jsp' class='d-inline'><@input type='hidden' name='action' value='changeUserStatus' /><@input type='hidden' name='active' value='false' /><@input type='hidden' name='plugin_name' value='${plugin_name}' /><@input type='hidden' name='mylutece_database_user_id' value='${user.userId}' /><@button type='submit' color='link' class='text-body justify-content-start dropdown-item portlet-type-ref' title='#i18n{module.mylutece.database.manage_users.linkDeactivateUser}' /></@tform>
 								<#else>
-									<@link class='dropdown-item portlet-type-ref' href='jsp/admin/plugins/mylutece/modules/database/DoActivateUser.jsp?plugin_name=${plugin_name}&mylutece_database_user_id=${user.userId}' label='#i18n{module.mylutece.database.manage_users.linkActivateUser}' />
+									<@tform method='post' action='jsp/admin/plugins/mylutece/modules/database/ManageUsers.jsp' class='d-inline'><@input type='hidden' name='action' value='changeUserStatus' /><@input type='hidden' name='active' value='true' /><@input type='hidden' name='plugin_name' value='${plugin_name}' /><@input type='hidden' name='mylutece_database_user_id' value='${user.userId}' /><@button type='submit' color='link' class='text-body justify-content-start dropdown-item portlet-type-ref' title='#i18n{module.mylutece.database.manage_users.linkActivateUser}' /></@tform>
 								</#if>
 							</#if>
-							<@offcanvas id='offcanvasGroups-${user.userId}' targetUrl='jsp/admin/plugins/mylutece/modules/database/ManageGroupsUser.jsp?plugin_name=${plugin_name}&mylutece_database_user_id=${user.userId}' useIframe=true title='#i18n{module.mylutece.database.manage_users.linkManageGroups}' btnTitle='#i18n{module.mylutece.database.manage_users.linkManageGroups}' btnIcon='' btnColor='link' btnClass='text-body justify-content-start dropdown-item portlet-type-ref' position='end' size='half' />
-							<@offcanvas id='offcanvasRoles-${user.userId}' targetUrl='jsp/admin/plugins/mylutece/modules/database/ManageRolesUser.jsp?plugin_name=${plugin_name}&mylutece_database_user_id=${user.userId}' useIframe=true title='#i18n{module.mylutece.database.manage_users.linkManageRoles}' btnTitle='#i18n{module.mylutece.database.manage_users.linkManageRoles}' btnIcon='' btnColor='link' btnClass='text-body justify-content-start dropdown-item portlet-type-ref' position='end' size='half' />
+							<@offcanvas id='offcanvasGroups-${user.userId}' targetUrl='jsp/admin/plugins/mylutece/modules/database/ManageUsers.jsp?view=manageGroupsUser&plugin_name=${plugin_name}&mylutece_database_user_id=${user.userId}' useIframe=true title='#i18n{module.mylutece.database.manage_users.linkManageGroups}' btnTitle='#i18n{module.mylutece.database.manage_users.linkManageGroups}' btnIcon='' btnColor='link' btnClass='text-body justify-content-start dropdown-item portlet-type-ref' position='end' size='half' />
+							<@offcanvas id='offcanvasRoles-${user.userId}' targetUrl='jsp/admin/plugins/mylutece/modules/database/ManageUsers.jsp?view=manageRolesUser&plugin_name=${plugin_name}&mylutece_database_user_id=${user.userId}' useIframe=true title='#i18n{module.mylutece.database.manage_users.linkManageRoles}' btnTitle='#i18n{module.mylutece.database.manage_users.linkManageRoles}' btnIcon='' btnColor='link' btnClass='text-body justify-content-start dropdown-item portlet-type-ref' position='end' size='half' />
 							<#if user.status != 10>
-								<@link class='dropdown-item portlet-type-ref' href='jsp/admin/plugins/mylutece/modules/database/GetAnonymizeUser.jsp?plugin_name=${plugin_name}&user_id=${user.userId}' label='#i18n{mylutece.anonymize_user.labelAnonymizeUser}' />
+								<@link class='dropdown-item portlet-type-ref' href='jsp/admin/plugins/mylutece/modules/database/ManageUsers.jsp?view=confirmAnonymizeUser&plugin_name=${plugin_name}&user_id=${user.userId}' label='#i18n{mylutece.anonymize_user.labelAnonymizeUser}' />
 							</#if>
-							<@link class='dropdown-item portlet-type-ref' href='jsp/admin/plugins/mylutece/modules/database/RemoveUser.jsp?plugin_name=${plugin_name}&mylutece_database_user_id=${user.userId}' label='#i18n{module.mylutece.database.manage_users.linkRemoveUser}' />
+							<@link class='dropdown-item portlet-type-ref' href='jsp/admin/plugins/mylutece/modules/database/ManageUsers.jsp?view=confirmRemoveUser&plugin_name=${plugin_name}&mylutece_database_user_id=${user.userId}' label='#i18n{module.mylutece.database.manage_users.linkRemoveUser}' />
 						</@aButton>
 					</@manageFeatureItemColumn>
 				</@manageFeatureItem>

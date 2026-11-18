@@ -1,9 +1,0 @@
-<%@ page errorPage="../../../../ErrorPage.jsp" %>
-<jsp:include page="../../../../AdminHeader.jsp" />
-
-<%@page import="fr.paris.lutece.plugins.mylutece.modules.database.authentication.web.DatabaseJspBean"%>
-
-${ mylutecedatabase_databaseJspBean.init( pageContext.request, DatabaseJspBean.RIGHT_MANAGE_DATABASE_USERS ) }
-${ mylutecedatabase_databaseJspBean.getChangeFieldAnonymizeAdminUsers( pageContext.request ) }
-
-<%@ include file="../../../../AdminFooter.jsp" %>
