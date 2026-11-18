@@ -1,9 +1,9 @@
 <%@ page errorPage="../../../../ErrorPage.jsp" %>
+
+${ pageContext.setAttribute( 'strContent', mylutecedatabase_groupJspBean.processController( pageContext.request, pageContext.response ) ) }
+
 <jsp:include page="../../../../AdminHeader.jsp" />
 
-<%@page import="fr.paris.lutece.plugins.mylutece.modules.database.authentication.web.GroupJspBean"%>
-
-${ mylutecedatabase_groupJspBean.init( pageContext.request, GroupJspBean.RIGHT_GROUPS_MANAGEMENT ) }
-${ mylutecedatabase_groupJspBean.getManageGroups( pageContext.request ) }
+${ pageContext.getAttribute( 'strContent' ) }
 
 <%@ include file="../../../../AdminFooter.jsp" %>

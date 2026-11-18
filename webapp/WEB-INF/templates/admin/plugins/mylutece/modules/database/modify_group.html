@@ -1,7 +1,7 @@
 <@pageContainer>
     <@pageColumn>
 		<@pageHeader title='#i18n{module.mylutece.database.modify_group.titleGroup} : ${group.groupKey}' />
-		<@tform method='post' action='jsp/admin/plugins/mylutece/modules/database/DoModifyGroup.jsp' name='modify_group'>
+		<@tform method='post' action='jsp/admin/plugins/mylutece/modules/database/ManageGroups.jsp?action=modifyGroup' name='modify_group'>
 		<@input type='hidden' name='group_key' value='${group.groupKey}' />
 		<#assign groupLegend>#i18n{module.mylutece.database.modify_group.titleGroup} : ${group.groupKey} - <small>#i18n{module.mylutece.database.modify_group.labelAssignedUsersNumber} : <strong>${assigned_users_number}</strong></small></#assign>
 		<@fieldSet legend=groupLegend>

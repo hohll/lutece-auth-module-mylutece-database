@@ -34,11 +34,16 @@
 package fr.paris.lutece.plugins.mylutece.modules.database.authentication.web;
 
 import fr.paris.lutece.portal.service.message.AdminMessageService;
+import fr.paris.lutece.portal.util.mvc.admin.MVCAdminJspBean;
 import fr.paris.lutece.test.LuteceTestCase;
 import fr.paris.lutece.test.mocks.MockHttpServletRequest;
+import fr.paris.lutece.test.mocks.MockHttpServletResponse;
 
 import jakarta.inject.Inject;
 
+import java.lang.reflect.Field;
+
+import org.jboss.weld.proxy.WeldClientProxy;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -65,11 +70,13 @@ public class DatabaseJspBeanReturnUrlTest extends LuteceTestCase
         request.addParameter( "first_password", "password" );
         request.addParameter( "second_password", "password" );
 
-        String strUrl = _databaseJspBean.doCreateUser( request );
+        RedirectResponse response = withResponse( _databaseJspBean );
+        _databaseJspBean.doCreateUser( request );
+        String strUrl = response._strLocation;
 
         assertTrue( strUrl.endsWith( AdminMessageService.getMessageRelativeUrl( ) ), strUrl );
         String strBackUrl = AdminMessageService.getMessage( request ).getBackUrl( );
-        assertTrue( strBackUrl.endsWith( JSP_PATH + "CreateUser.jsp?plugin_name=mylutece-database" ), strBackUrl );
+        assertTrue( strBackUrl.endsWith( JSP_PATH + "ManageUsers.jsp?view=createUser&plugin_name=mylutece-database" ), strBackUrl );
     }
 
     /**
@@ -83,11 +90,13 @@ public class DatabaseJspBeanReturnUrlTest extends LuteceTestCase
         request.addParameter( "login", "login" );
         request.addParameter( "email", "login@example.com" );
 
-        String strUrl = _databaseJspBean.doModifyUser( request );
+        RedirectResponse response = withResponse( _databaseJspBean );
+        _databaseJspBean.doModifyUser( request );
+        String strUrl = response._strLocation;
 
         assertTrue( strUrl.endsWith( AdminMessageService.getMessageRelativeUrl( ) ), strUrl );
         String strBackUrl = AdminMessageService.getMessage( request ).getBackUrl( );
-        assertTrue( strBackUrl.endsWith( JSP_PATH + "ModifyUser.jsp?plugin_name=mylutece-database&mylutece_database_user_id=12" ), strBackUrl );
+        assertTrue( strBackUrl.endsWith( JSP_PATH + "ManageUsers.jsp?view=modifyUser&plugin_name=mylutece-database&mylutece_database_user_id=12" ), strBackUrl );
     }
 
     /**
@@ -99,10 +108,51 @@ public class DatabaseJspBeanReturnUrlTest extends LuteceTestCase
         MockHttpServletRequest request = new MockHttpServletRequest( );
         request.addParameter( "group_key", "" );
 
-        String strUrl = _groupJspBean.doCreateGroup( request );
+        RedirectResponse response = withResponse( _groupJspBean );
+        _groupJspBean.doCreateGroup( request );
+        String strUrl = response._strLocation;
 
         assertTrue( strUrl.endsWith( AdminMessageService.getMessageRelativeUrl( ) ), strUrl );
         String strBackUrl = AdminMessageService.getMessage( request ).getBackUrl( );
-        assertTrue( strBackUrl.endsWith( JSP_PATH + "CreateGroup.jsp" ), strBackUrl );
+        assertTrue( strBackUrl.endsWith( JSP_PATH + "ManageGroups.jsp?view=createGroup" ), strBackUrl );
+    }
+
+    /**
+     * Gives the controller the response its actions redirect with, as processController does
+     * 
+     * @param bean
+     *            the controller (CDI proxy)
+     * @return the response
+     */
+    private static RedirectResponse withResponse( Object bean )
+    {
+        RedirectResponse response = new RedirectResponse( );
+        try
+        {
+            Object instance = ( (WeldClientProxy) bean ).getMetadata( ).getContextualInstance( );
+            Field field = MVCAdminJspBean.class.getDeclaredField( "_response" );
+            field.setAccessible( true );
+            field.set( instance, response );
+        }
+        catch( ReflectiveOperationException e )
+        {
+            throw new IllegalStateException( e );
+        }
+
+        return response;
+    }
+
+    /**
+     * Response keeping the location of the redirection
+     */
+    private static class RedirectResponse extends MockHttpServletResponse
+    {
+        private String _strLocation;
+
+        @Override
+        public void sendRedirect( String strLocation )
+        {
+            _strLocation = strLocation;
+        }
     }
 }

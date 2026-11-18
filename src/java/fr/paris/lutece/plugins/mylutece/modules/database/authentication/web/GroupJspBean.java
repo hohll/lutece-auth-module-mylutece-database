@@ -47,24 +47,27 @@ import fr.paris.lutece.portal.business.role.Role;
 import fr.paris.lutece.portal.business.role.RoleHome;
 import fr.paris.lutece.portal.service.message.AdminMessage;
 import fr.paris.lutece.portal.service.message.AdminMessageService;
-import fr.paris.lutece.portal.service.template.AppTemplateService;
 import fr.paris.lutece.portal.service.util.AppPathService;
 import fr.paris.lutece.portal.service.util.AppPropertiesService;
 import fr.paris.lutece.portal.service.workgroup.AdminWorkgroupService;
-import fr.paris.lutece.portal.web.admin.PluginAdminPageJspBean;
+import fr.paris.lutece.portal.util.mvc.admin.MVCAdminJspBean;
+import fr.paris.lutece.portal.util.mvc.admin.annotations.Controller;
+import fr.paris.lutece.portal.util.mvc.commons.annotations.Action;
+import fr.paris.lutece.portal.util.mvc.commons.annotations.View;
+import fr.paris.lutece.portal.web.cdi.mvc.Models;
 import fr.paris.lutece.portal.web.constants.Messages;
 import fr.paris.lutece.portal.web.constants.Parameters;
 import fr.paris.lutece.portal.web.util.LocalizedPaginator;
 import fr.paris.lutece.util.ReferenceItem;
 import fr.paris.lutece.util.ReferenceList;
 import fr.paris.lutece.util.html.AbstractPaginator;
-import fr.paris.lutece.util.html.HtmlTemplate;
 import fr.paris.lutece.util.html.ItemNavigator;
 import fr.paris.lutece.util.sort.AttributeComparator;
 import fr.paris.lutece.util.url.UrlItem;
 
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.math.NumberUtils;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -85,7 +88,8 @@ import jakarta.servlet.http.HttpServletRequest;
  */
 @SessionScoped
 @Named( "mylutecedatabase_groupJspBean" )
-public class GroupJspBean extends PluginAdminPageJspBean
+@Controller( controllerJsp = GroupJspBean.CONTROLLER_JSP, controllerPath = GroupJspBean.CONTROLLER_PATH, right = GroupJspBean.RIGHT_GROUPS_MANAGEMENT, securityTokenEnabled = true )
+public class GroupJspBean extends MVCAdminJspBean
 {
     private static final long serialVersionUID = -3940937010700725590L;
 
@@ -93,24 +97,41 @@ public class GroupJspBean extends PluginAdminPageJspBean
     public static final String RIGHT_GROUPS_MANAGEMENT = "DATABASE_GROUPS_MANAGEMENT";
 
     // Constants
-    private static final String QUESTION_MARK = "?";
-    private static final String EQUAL = "=";
     private static final String AMPERSAND = "&";
     private static final String SPACE = " ";
     private static final String OPEN_BRACKET = "(";
     private static final String CLOSED_BRACKET = ")";
-    private static final String SHARP = "#";
 
     // JSP
-    private static final String JSP_URL_DO_REMOVE_GROUP = "jsp/admin/plugins/mylutece/modules/database/DoRemoveGroup.jsp";
-    private static final String JSP_URL_MODIFY_GROUP = "jsp/admin/plugins/mylutece/modules/database/ModifyGroup.jsp";
-    private static final String JSP_URL_MANAGE_ROLES_GROUP = "jsp/admin/plugins/mylutece/modules/database/ManageRolesGroup.jsp";
-    private static final String JSP_URL_MANAGE_USERS_GROUP = "jsp/admin/plugins/mylutece/modules/database/ManageUsersGroup.jsp";
-    private static final String JSP_URL_CREATE_GROUP = "jsp/admin/plugins/mylutece/modules/database/CreateGroup.jsp";
-    private static final String JSP_MODIFY_GROUP = "ModifyGroup.jsp";
-    private static final String JSP_MANAGE_ROLES_GROUP = "ManageRolesGroup.jsp";
-    private static final String JSP_MANAGE_GROUPS = "ManageGroups.jsp";
-    private static final String JSP_MANAGE_USERS_GROUP = "ManageUsersGroup.jsp";
+    static final String CONTROLLER_JSP = "ManageGroups.jsp";
+    static final String CONTROLLER_PATH = "jsp/admin/plugins/mylutece/modules/database/";
+    private static final String CONTROLLER_URL = CONTROLLER_PATH + CONTROLLER_JSP;
+
+    // Views
+    static final String VIEW_MANAGE_GROUPS = "manageGroups";
+    static final String VIEW_CREATE_GROUP = "createGroup";
+    static final String VIEW_MODIFY_GROUP = "modifyGroup";
+    static final String VIEW_CONFIRM_REMOVE_GROUP = "confirmRemoveGroup";
+    static final String VIEW_MANAGE_ROLES_GROUP = "manageRolesGroup";
+    static final String VIEW_MANAGE_USERS_GROUP = "manageUsersGroup";
+    static final String VIEW_CONFIRM_UNASSIGN_USER_GROUP = "confirmUnassignUserGroup";
+
+    // Actions
+    static final String ACTION_CREATE_GROUP = "createGroup";
+    static final String ACTION_MODIFY_GROUP = "modifyGroup";
+    static final String ACTION_REMOVE_GROUP = "removeGroup";
+    static final String ACTION_ASSIGN_ROLE_GROUP = "assignRoleGroup";
+    static final String ACTION_ASSIGN_USERS_GROUP = "assignUsersGroup";
+    static final String ACTION_UNASSIGN_USER_GROUP = "unassignUserGroup";
+
+    // JSP: URL from the root of the webapp (messages, item navigators) or from the folder of the controller (redirections)
+    private static final String JSP_URL_DO_REMOVE_GROUP = CONTROLLER_URL + "?action=" + ACTION_REMOVE_GROUP;
+    private static final String JSP_URL_DO_UNASSIGN_USER_GROUP = CONTROLLER_URL + "?action=" + ACTION_UNASSIGN_USER_GROUP;
+    private static final String JSP_URL_MODIFY_GROUP = CONTROLLER_URL + "?view=" + VIEW_MODIFY_GROUP;
+    private static final String JSP_URL_MANAGE_ROLES_GROUP = CONTROLLER_URL + "?view=" + VIEW_MANAGE_ROLES_GROUP;
+    private static final String JSP_URL_MANAGE_USERS_GROUP = CONTROLLER_URL + "?view=" + VIEW_MANAGE_USERS_GROUP;
+    private static final String JSP_URL_CREATE_GROUP = CONTROLLER_URL + "?view=" + VIEW_CREATE_GROUP;
+    private static final String JSP_MANAGE_GROUPS = CONTROLLER_JSP;
 
     // Markers
     private static final String MARK_GROUPS_LIST = "groups_list";
@@ -157,6 +178,7 @@ public class GroupJspBean extends PluginAdminPageJspBean
     // Message
     private static final String MESSAGE_GROUP_EXIST = "module.mylutece.database.message.groupExist";
     private static final String MESSAGE_CONFIRM_REMOVE = "module.mylutece.database.message.confirmRemoveGroup";
+    private static final String MESSAGE_CONFIRM_UNASSIGN_USER = "module.mylutece.database.message.confirmUnassignUserGroup";
     private static final String MESSAGE_ERROR_MODIFY = "module.mylutece.database.message.errorModifyGroup";
     private static final String MESSAGE_ERROR_REMOVE = "module.mylutece.database.message.errorRemoveGroup";
     private static final String MESSAGE_ERROR_MANAGE_GROUPS = "module.mylutece.database.message.errorManageGroups";
@@ -170,6 +192,9 @@ public class GroupJspBean extends PluginAdminPageJspBean
 
     @Inject
     private DatabaseService _databaseService;
+    @Inject
+    private Models _models;
+    private String _strPageTitleProperty;
 
     /**
      * Returns Group management form
@@ -178,6 +203,7 @@ public class GroupJspBean extends PluginAdminPageJspBean
      *            The Http request
      * @return Html form
      */
+    @View( value = VIEW_MANAGE_GROUPS, defaultView = true )
     public String getManageGroups( HttpServletRequest request )
     {
         setPageTitleProperty( null );
@@ -259,9 +285,7 @@ public class GroupJspBean extends PluginAdminPageJspBean
         model.put( MARK_SEARCH_GROUP_FILTER, _gFilter );
         model.put( MARK_SORT_SEARCH_ATTRIBUTE, strSortSearchAttribute );
 
-        HtmlTemplate template = AppTemplateService.getTemplate( TEMPLATE_MANAGE_GROUPS, getLocale( ), model );
-
-        return getAdminPage( template.getHtml( ) );
+        return getPageWithToken( TEMPLATE_MANAGE_GROUPS, model );
     }
 
     /**
@@ -271,13 +295,12 @@ public class GroupJspBean extends PluginAdminPageJspBean
      *            The HTTP request
      * @return String The html code page
      */
+    @View( value = VIEW_CREATE_GROUP, securityTokenAction = ACTION_CREATE_GROUP )
     public String getCreateGroup( HttpServletRequest request )
     {
         setPageTitleProperty( PROPERTY_PAGE_TITLE_CREATE_GROUP );
 
-        HtmlTemplate template = AppTemplateService.getTemplate( TEMPLATE_CREATE_GROUP, getLocale( ) );
-
-        return getAdminPage( template.getHtml( ) );
+        return getPageWithToken( TEMPLATE_CREATE_GROUP, new HashMap<>( ) );
     }
 
     /**
@@ -287,6 +310,7 @@ public class GroupJspBean extends PluginAdminPageJspBean
      *            The HTTP request
      * @return String The url page
      */
+    @Action( ACTION_CREATE_GROUP )
     public String doCreateGroup( HttpServletRequest request )
     {
         String strGroupKey = request.getParameter( PARAMETER_GROUP_KEY );
@@ -295,15 +319,15 @@ public class GroupJspBean extends PluginAdminPageJspBean
         // Mandatory field
         if ( strGroupKey.length( ) == 0 )
         {
-            return AdminMessageService.getMessageUrlReturningTo( request, Messages.MANDATORY_FIELDS, AdminMessage.TYPE_STOP,
-                    AppPathService.getBaseUrl( request ) + JSP_URL_CREATE_GROUP );
+            return redirect( request, AdminMessageService.getMessageUrlReturningTo( request, Messages.MANDATORY_FIELDS, AdminMessage.TYPE_STOP,
+                    AppPathService.getBaseUrl( request ) + JSP_URL_CREATE_GROUP ) );
         }
 
         // check if group exist
         if ( GroupHome.findByPrimaryKey( strGroupKey, getPlugin( ) ) != null )
         {
-            return AdminMessageService.getMessageUrlReturningTo( request, MESSAGE_GROUP_EXIST, AdminMessage.TYPE_STOP,
-                    AppPathService.getBaseUrl( request ) + JSP_URL_CREATE_GROUP );
+            return redirect( request, AdminMessageService.getMessageUrlReturningTo( request, MESSAGE_GROUP_EXIST, AdminMessage.TYPE_STOP,
+                    AppPathService.getBaseUrl( request ) + JSP_URL_CREATE_GROUP ) );
         }
 
         Group group = new Group( );
@@ -311,7 +335,7 @@ public class GroupJspBean extends PluginAdminPageJspBean
         group.setGroupDescription( strGroupDescription );
         GroupHome.create( group, getPlugin( ) );
 
-        return getHomeUrl( request );
+        return redirect( request, getHomeUrl( request ) );
     }
 
     /**
@@ -320,6 +344,7 @@ public class GroupJspBean extends PluginAdminPageJspBean
      *            The HTTP request
      * @return String The html code page
      */
+    @View( value = VIEW_MODIFY_GROUP, securityTokenAction = ACTION_MODIFY_GROUP )
     public String getModifyGroup( HttpServletRequest request )
     {
         setPageTitleProperty( PROPERTY_PAGE_TITLE_MODIFY_GROUP );
@@ -328,7 +353,7 @@ public class GroupJspBean extends PluginAdminPageJspBean
 
         if ( selectedGroup == null )
         {
-            return getCreateGroup( request );
+            return redirectView( request, VIEW_MANAGE_GROUPS );
         }
 
         // ASSIGNED USERS NUMBER
@@ -343,9 +368,7 @@ public class GroupJspBean extends PluginAdminPageJspBean
         model.put( MARK_ITEM_NAVIGATOR, _itemNavigators.get( PARAMETER_MODIFY_GROUP ) );
         model.put( MARK_ASSIGNED_USERS_NUMBER, nAssignedUsersNumber );
 
-        HtmlTemplate template = AppTemplateService.getTemplate( TEMPLATE_GROUP_MODIFY, getLocale( ), model );
-
-        return getAdminPage( template.getHtml( ) );
+        return getPageWithToken( TEMPLATE_GROUP_MODIFY, model );
     }
 
     /**
@@ -355,6 +378,7 @@ public class GroupJspBean extends PluginAdminPageJspBean
      *            The HTTP request
      * @return String The url page
      */
+    @Action( ACTION_MODIFY_GROUP )
     public String doModifyGroup( HttpServletRequest request )
     {
         String strReturn;
@@ -374,7 +398,7 @@ public class GroupJspBean extends PluginAdminPageJspBean
 
             if ( group == null )
             {
-                return AdminMessageService.getMessageUrlReturningTo( request, MESSAGE_ERROR_MODIFY, AdminMessage.TYPE_ERROR, getHomeUrl( request ) );
+                return redirect( request, AdminMessageService.getMessageUrlReturningTo( request, MESSAGE_ERROR_MODIFY, AdminMessage.TYPE_ERROR, getHomeUrl( request ) ) );
             }
 
             // Mandatory field
@@ -383,16 +407,16 @@ public class GroupJspBean extends PluginAdminPageJspBean
                 UrlItem urlModify = new UrlItem( AppPathService.getBaseUrl( request ) + JSP_URL_MODIFY_GROUP );
                 urlModify.addParameter( PARAMETER_GROUP_KEY, URLEncoder.encode( group.getGroupKey( ), StandardCharsets.UTF_8 ) );
 
-                return AdminMessageService.getMessageUrlReturningTo( request, Messages.MANDATORY_FIELDS, AdminMessage.TYPE_STOP, urlModify.getUrl( ) );
+                return redirect( request, AdminMessageService.getMessageUrlReturningTo( request, Messages.MANDATORY_FIELDS, AdminMessage.TYPE_STOP, urlModify.getUrl( ) ) );
             }
 
             group.setGroupKey( strGroupKey );
             group.setGroupDescription( strGroupDescription );
             GroupHome.update( group, getPlugin( ) );
-            strReturn = JSP_MODIFY_GROUP + QUESTION_MARK + PARAMETER_GROUP_KEY + EQUAL + group.getGroupKey( );
+            strReturn = getGroupViewUrl( VIEW_MODIFY_GROUP, group.getGroupKey( ) );
         }
 
-        return strReturn;
+        return redirect( request, strReturn );
     }
 
     /**
@@ -402,12 +426,13 @@ public class GroupJspBean extends PluginAdminPageJspBean
      *            The HTTP request
      * @return String The html code page
      */
+    @View( value = VIEW_CONFIRM_REMOVE_GROUP, securityTokenAction = ACTION_REMOVE_GROUP )
     public String getRemoveGroup( HttpServletRequest request )
     {
         UrlItem url = new UrlItem( JSP_URL_DO_REMOVE_GROUP );
         url.addParameter( PARAMETER_GROUP_KEY, request.getParameter( PARAMETER_GROUP_KEY ) );
 
-        return AdminMessageService.getMessageUrl( request, MESSAGE_CONFIRM_REMOVE, url.getUrl( ), AdminMessage.TYPE_CONFIRMATION );
+        return redirect( request, AdminMessageService.getMessageUrl( request, MESSAGE_CONFIRM_REMOVE, url.getUrl( ), AdminMessage.TYPE_CONFIRMATION ) );
     }
 
     /**
@@ -417,18 +442,19 @@ public class GroupJspBean extends PluginAdminPageJspBean
      *            The HTTP request
      * @return String The url page
      */
+    @Action( ACTION_REMOVE_GROUP )
     public String doRemoveGroup( HttpServletRequest request )
     {
         Group group = getGroupFromRequest( request );
 
         if ( group == null )
         {
-            return AdminMessageService.getMessageUrlReturningTo( request, MESSAGE_ERROR_REMOVE, AdminMessage.TYPE_ERROR, getHomeUrl( request ) );
+            return redirect( request, AdminMessageService.getMessageUrlReturningTo( request, MESSAGE_ERROR_REMOVE, AdminMessage.TYPE_ERROR, getHomeUrl( request ) ) );
         }
 
         GroupHome.remove( group.getGroupKey( ), getPlugin( ) );
 
-        return getHomeUrl( request );
+        return redirect( request, getHomeUrl( request ) );
     }
 
     /**
@@ -438,6 +464,7 @@ public class GroupJspBean extends PluginAdminPageJspBean
      *            The Http request
      * @return Html form
      */
+    @View( value = VIEW_MANAGE_ROLES_GROUP, securityTokenAction = ACTION_ASSIGN_ROLE_GROUP )
     public String getManageRolesGroup( HttpServletRequest request )
     {
         setPageTitleProperty( PROPERTY_PAGE_TITLE_MANAGE_ROLES_GROUP );
@@ -446,7 +473,7 @@ public class GroupJspBean extends PluginAdminPageJspBean
 
         if ( selectedGroup == null )
         {
-            return getManageGroups( request );
+            return redirectView( request, VIEW_MANAGE_GROUPS );
         }
 
         // ASSIGNED USERS NUMBER
@@ -480,9 +507,7 @@ public class GroupJspBean extends PluginAdminPageJspBean
         model.put( MARK_ITEM_NAVIGATOR, _itemNavigators.get( PARAMETER_ASSIGN_ROLE ) );
         model.put( MARK_ASSIGNED_USERS_NUMBER, nAssignedUsersNumber );
 
-        HtmlTemplate template = AppTemplateService.getTemplate( TEMPLATE_MANAGE_ROLES_GROUP, getLocale( ), model );
-
-        return getAdminPage( template.getHtml( ) );
+        return getPageWithToken( TEMPLATE_MANAGE_ROLES_GROUP, model );
     }
 
     /**
@@ -492,6 +517,7 @@ public class GroupJspBean extends PluginAdminPageJspBean
      *            The Http request
      * @return Html form
      */
+    @Action( ACTION_ASSIGN_ROLE_GROUP )
     public String doAssignRoleGroup( HttpServletRequest request )
     {
         String strReturn;
@@ -509,8 +535,8 @@ public class GroupJspBean extends PluginAdminPageJspBean
 
             if ( group == null )
             {
-                return AdminMessageService.getMessageUrlReturningTo( request, MESSAGE_ERROR_MANAGE_GROUPS, AdminMessage.TYPE_ERROR,
-                        getHomeUrl( request ) );
+                return redirect( request, AdminMessageService.getMessageUrlReturningTo( request, MESSAGE_ERROR_MANAGE_GROUPS, AdminMessage.TYPE_ERROR,
+                        getHomeUrl( request ) ) );
             }
 
             String [ ] roleArray = request.getParameterValues( PARAMETER_ROLE_KEY );
@@ -525,10 +551,10 @@ public class GroupJspBean extends PluginAdminPageJspBean
                 }
             }
 
-            strReturn = JSP_MANAGE_ROLES_GROUP + QUESTION_MARK + PARAMETER_GROUP_KEY + EQUAL + group.getGroupKey( );
+            strReturn = getGroupViewUrl( VIEW_MANAGE_ROLES_GROUP, group.getGroupKey( ) );
         }
 
-        return strReturn;
+        return redirect( request, strReturn );
     }
 
     /**
@@ -593,6 +619,7 @@ public class GroupJspBean extends PluginAdminPageJspBean
      *            HttpServletRequest
      * @return Html form
      */
+    @View( value = VIEW_MANAGE_USERS_GROUP, securityTokenAction = ACTION_ASSIGN_USERS_GROUP )
     public String getManageUsersGroup( HttpServletRequest request )
     {
         setPageTitleProperty( PROPERTY_PAGE_TITLE_MANAGE_USERS_GROUP );
@@ -606,7 +633,7 @@ public class GroupJspBean extends PluginAdminPageJspBean
 
         if ( selectedGroup == null )
         {
-            return getManageGroups( request );
+            return redirectView( request, VIEW_MANAGE_GROUPS );
         }
 
         // ASSIGNED USERS
@@ -661,9 +688,7 @@ public class GroupJspBean extends PluginAdminPageJspBean
         model.put( MARK_ASSIGNED_USERS, paginator.getPageItems( ) );
         model.put( MARK_ASSIGNED_USERS_NUMBER, listAllAssignedUsers.size( ) );
 
-        HtmlTemplate template = AppTemplateService.getTemplate( TEMPLATE_MANAGE_USERS_GROUP, getLocale( ), model );
-
-        return getAdminPage( template.getHtml( ) );
+        return getPageWithToken( TEMPLATE_MANAGE_USERS_GROUP, model );
     }
 
     /**
@@ -673,6 +698,7 @@ public class GroupJspBean extends PluginAdminPageJspBean
      *            HttpServletRequest
      * @return JSP return
      */
+    @Action( ACTION_ASSIGN_USERS_GROUP )
     public String doAssignUsersGroup( HttpServletRequest request )
     {
         String strReturn;
@@ -689,7 +715,7 @@ public class GroupJspBean extends PluginAdminPageJspBean
 
             if ( selectedGroup == null )
             {
-                return getCreateGroup( request );
+                return redirectView( request, VIEW_MANAGE_GROUPS );
             }
 
             // retrieve the selected portlets ids
@@ -705,10 +731,31 @@ public class GroupJspBean extends PluginAdminPageJspBean
                 }
             }
 
-            strReturn = JSP_MANAGE_USERS_GROUP + QUESTION_MARK + PARAMETER_GROUP_KEY + EQUAL + selectedGroup.getGroupKey( );
+            strReturn = getGroupViewUrl( VIEW_MANAGE_USERS_GROUP, selectedGroup.getGroupKey( ) );
         }
 
-        return strReturn;
+        return redirect( request, strReturn );
+    }
+
+    /**
+     * Asks the confirmation of the unassignment of a user from a group
+     * 
+     * @param request
+     *            The HTTP request
+     * @return The URL of the confirmation message
+     */
+    @View( value = VIEW_CONFIRM_UNASSIGN_USER_GROUP, securityTokenAction = ACTION_UNASSIGN_USER_GROUP )
+    public String getConfirmUnassignUserGroup( HttpServletRequest request )
+    {
+        UrlItem url = new UrlItem( JSP_URL_DO_UNASSIGN_USER_GROUP );
+        url.addParameter( PARAMETER_GROUP_KEY, request.getParameter( PARAMETER_GROUP_KEY ) );
+        url.addParameter( PARAMETER_MYLUTECE_DATABASE_USER_ID, request.getParameter( PARAMETER_MYLUTECE_DATABASE_USER_ID ) );
+        if ( request.getParameter( PARAMETER_ANCHOR ) != null )
+        {
+            url.addParameter( PARAMETER_ANCHOR, request.getParameter( PARAMETER_ANCHOR ) );
+        }
+
+        return redirect( request, AdminMessageService.getMessageUrl( request, MESSAGE_CONFIRM_UNASSIGN_USER, url.getUrl( ), AdminMessage.TYPE_CONFIRMATION ) );
     }
 
     /**
@@ -718,16 +765,17 @@ public class GroupJspBean extends PluginAdminPageJspBean
      *            HttpServletRequest
      * @return JSP return
      */
-    public String doUnAssignUserGroup( HttpServletRequest request )
+    @Action( ACTION_UNASSIGN_USER_GROUP )
+    public String doUnassignUserGroup( HttpServletRequest request )
     {
         Group selectedGroup = getGroupFromRequest( request );
 
         if ( selectedGroup == null )
         {
-            return getCreateGroup( request );
+            return redirectView( request, VIEW_MANAGE_GROUPS );
         }
 
-        int nIdUser = Integer.parseInt( request.getParameter( PARAMETER_MYLUTECE_DATABASE_USER_ID ) );
+        int nIdUser = NumberUtils.toInt( request.getParameter( PARAMETER_MYLUTECE_DATABASE_USER_ID ), -1 );
         String strAnchor = request.getParameter( PARAMETER_ANCHOR );
 
         DatabaseUser user = DatabaseUserHome.findByPrimaryKey( nIdUser, getPlugin( ) );
@@ -737,7 +785,10 @@ public class GroupJspBean extends PluginAdminPageJspBean
             DatabaseHome.removeGroupsForUser( user.getUserId( ), getPlugin( ) );
         }
 
-        return JSP_MANAGE_USERS_GROUP + QUESTION_MARK + PARAMETER_GROUP_KEY + EQUAL + selectedGroup.getGroupKey( ) + SHARP + strAnchor;
+        UrlItem url = new UrlItem( getGroupViewUrl( VIEW_MANAGE_USERS_GROUP, selectedGroup.getGroupKey( ) ) );
+        url.setAnchor( strAnchor );
+
+        return redirect( request, url.getUrl( ) );
     }
 
     /**
@@ -870,6 +921,55 @@ public class GroupJspBean extends PluginAdminPageJspBean
         }
 
         _itemNavigators.put( strItemNavigatorKey, itemNavigator );
+    }
+
+    /**
+     * Gets the page of a view: the model goes to the models of the request, which carry the security token of the view, added to the forms of the page
+     * 
+     * @param strTemplate
+     *            The template
+     * @param model
+     *            The model
+     * @return The page
+     */
+    private String getPageWithToken( String strTemplate, Map<String, Object> model )
+    {
+        model.forEach( ( strKey, value ) -> {
+            if ( value != null )
+            {
+                _models.put( strKey, value );
+            }
+        } );
+
+        return getPage( _strPageTitleProperty, strTemplate );
+    }
+
+    /**
+     * {@inheritDoc} The property is kept for the page built with the token of the view.
+     */
+    @Override
+    public void setPageTitleProperty( String strPageTitleKey )
+    {
+        _strPageTitleProperty = strPageTitleKey;
+        super.setPageTitleProperty( strPageTitleKey );
+    }
+
+    /**
+     * Gets the URL of a view of a group, from the folder of the controller
+     * 
+     * @param strView
+     *            The view
+     * @param strGroupKey
+     *            The key of the group
+     * @return The URL
+     */
+    private String getGroupViewUrl( String strView, String strGroupKey )
+    {
+        UrlItem url = new UrlItem( CONTROLLER_JSP );
+        url.addParameter( "view", strView );
+        url.addParameter( PARAMETER_GROUP_KEY, URLEncoder.encode( strGroupKey, StandardCharsets.UTF_8 ) );
+
+        return url.getUrl( );
     }
 
     /**

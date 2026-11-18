@@ -14,7 +14,7 @@
 					</@formGroup>
 				</@tform>
 			</@offcanvas>
-			<@offcanvas id='group-create' targetUrl='jsp/admin/plugins/mylutece/modules/database/CreateGroup.jsp' useIframe=true title='#i18n{module.mylutece.database.manage_groups.buttonLabelCreate}' btnTitle='#i18n{module.mylutece.database.manage_groups.buttonLabelCreate}' btnIcon='plus' btnColor='primary' position='end' size='half' />
+			<@offcanvas id='group-create' targetUrl='jsp/admin/plugins/mylutece/modules/database/ManageGroups.jsp?view=createGroup' useIframe=true title='#i18n{module.mylutece.database.manage_groups.buttonLabelCreate}' btnTitle='#i18n{module.mylutece.database.manage_groups.buttonLabelCreate}' btnIcon='plus' btnColor='primary' position='end' size='half' />
 		</@pageHeader>
 		<#if groups_list?size gt 0>
 			<@manageFeature>
@@ -22,10 +22,10 @@
 					<@manageFeatureItem>
 						<@manageFeatureItemColumn auto=true>${group.groupKey} - ${group.groupDescription}</@manageFeatureItemColumn>
 						<@manageFeatureItemColumn align='end'>
-							<@offcanvas id='offcanvasModifyGroup-${group.groupKey}' targetUrl='jsp/admin/plugins/mylutece/modules/database/ModifyGroup.jsp?group_key=${group.groupKey}' useIframe=true title='#i18n{portal.util.labelModify}' btnTitle='#i18n{portal.util.labelModify}' btnIcon='pencil' btnClass='me-1' hideTitle=['xs','sm','md'] position='end' size='half' />
-							<@offcanvas id='offcanvasUsersGroup-${group.groupKey}' targetUrl='jsp/admin/plugins/mylutece/modules/database/ManageUsersGroup.jsp?group_key=${group.groupKey}' useIframe=true title='#i18n{module.mylutece.database.manage_groups.linkLabelManageUsers}' btnTitle='#i18n{module.mylutece.database.manage_groups.linkLabelManageUsers}' btnIcon='users'  btnClass='me-1' hideTitle=['xs','sm','md'] position='end' size='half' />
-							<@offcanvas id='offcanvasRolesGroup-${group.groupKey}' targetUrl='jsp/admin/plugins/mylutece/modules/database/ManageRolesGroup.jsp?group_key=${group.groupKey}' useIframe=true title='#i18n{module.mylutece.database.manage_groups.linkLabelManageRoles}' btnTitle='#i18n{module.mylutece.database.manage_groups.linkLabelManageRoles}' btnIcon='user-shield'  btnClass='me-1' hideTitle=['xs','sm','md'] position='end' size='half' />
-							<@aButton href='jsp/admin/plugins/mylutece/modules/database/RemoveGroup.jsp?group_key=${group.groupKey}' title='#i18n{module.mylutece.database.manage_groups.linkLabelRemove}' hideTitle=['all'] buttonIcon='trash' color='danger' />
+							<@offcanvas id='offcanvasModifyGroup-${group.groupKey}' targetUrl='jsp/admin/plugins/mylutece/modules/database/ManageGroups.jsp?view=modifyGroup&group_key=${group.groupKey}' useIframe=true title='#i18n{portal.util.labelModify}' btnTitle='#i18n{portal.util.labelModify}' btnIcon='pencil' btnClass='me-1' hideTitle=['xs','sm','md'] position='end' size='half' />
+							<@offcanvas id='offcanvasUsersGroup-${group.groupKey}' targetUrl='jsp/admin/plugins/mylutece/modules/database/ManageGroups.jsp?view=manageUsersGroup&group_key=${group.groupKey}' useIframe=true title='#i18n{module.mylutece.database.manage_groups.linkLabelManageUsers}' btnTitle='#i18n{module.mylutece.database.manage_groups.linkLabelManageUsers}' btnIcon='users'  btnClass='me-1' hideTitle=['xs','sm','md'] position='end' size='half' />
+							<@offcanvas id='offcanvasRolesGroup-${group.groupKey}' targetUrl='jsp/admin/plugins/mylutece/modules/database/ManageGroups.jsp?view=manageRolesGroup&group_key=${group.groupKey}' useIframe=true title='#i18n{module.mylutece.database.manage_groups.linkLabelManageRoles}' btnTitle='#i18n{module.mylutece.database.manage_groups.linkLabelManageRoles}' btnIcon='user-shield'  btnClass='me-1' hideTitle=['xs','sm','md'] position='end' size='half' />
+							<@aButton href='jsp/admin/plugins/mylutece/modules/database/ManageGroups.jsp?view=confirmRemoveGroup&group_key=${group.groupKey}' title='#i18n{module.mylutece.database.manage_groups.linkLabelRemove}' hideTitle=['all'] buttonIcon='trash' color='danger' />
 						</@manageFeatureItemColumn>
 					</@manageFeatureItem>
 				</#list>

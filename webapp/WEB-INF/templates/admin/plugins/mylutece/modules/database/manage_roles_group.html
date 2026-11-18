@@ -1,7 +1,7 @@
 <@pageContainer>
     <@pageColumn>
 		<@pageHeader title='#i18n{module.mylutece.database.modify_group.titleGroup} : ${group.groupKey} - #i18n{module.mylutece.database.manage_roles_group.boxTitle}' />
-		<@tform action='jsp/admin/plugins/mylutece/modules/database/DoAssignRoleGroup.jsp'>
+		<@tform action='jsp/admin/plugins/mylutece/modules/database/ManageGroups.jsp?action=assignRoleGroup'>
 			<@input type='hidden' name='group_key' value='${group.groupKey}' />
 			<@manageFeature>
 				<#list role_list as role >

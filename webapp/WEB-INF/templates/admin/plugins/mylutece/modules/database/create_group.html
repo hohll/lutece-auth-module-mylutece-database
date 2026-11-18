@@ -1,7 +1,7 @@
 <@pageContainer>
     <@pageColumn>
 		<@pageHeader title='#i18n{module.mylutece.database.create_group.boxTitle}' />
-		<@tform method='post' action='jsp/admin/plugins/mylutece/modules/database/DoCreateGroup.jsp' name='create_group' boxed=true>
+		<@tform method='post' action='jsp/admin/plugins/mylutece/modules/database/ManageGroups.jsp?action=createGroup' name='create_group' boxed=true>
 		<@formGroup labelFor='group_key' labelKey='#i18n{module.mylutece.database.create_group.labelName}' mandatory=true>
 			<@input type='text' id='group_key' name='group_key' maxlength=100 />
 		</@formGroup>
