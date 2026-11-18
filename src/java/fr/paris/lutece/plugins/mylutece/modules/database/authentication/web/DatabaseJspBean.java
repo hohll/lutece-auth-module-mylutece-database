@@ -1118,6 +1118,8 @@ public class DatabaseJspBean extends PluginAdminPageJspBean
             int nStatus = bIsActive ? DatabaseUser.STATUS_ACTIVATED : DatabaseUser.STATUS_NOT_ACTIVATED;
             databaseUser.setStatus( nStatus );
             _databaseService.doUpdateUser( databaseUser, getPlugin( ) );
+            // A key sent before (account validation, lost password) must not undo the decision of the administrator
+            _userKeyService.removeByIdUser( databaseUser.getUserId( ) );
         }
 
         return MANAGE_USERS + "?" + PARAMETER_PLUGIN_NAME + "=" + getPlugin( ).getName( );

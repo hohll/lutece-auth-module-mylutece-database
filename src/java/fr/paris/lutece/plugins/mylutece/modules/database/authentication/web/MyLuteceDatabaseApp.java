@@ -984,7 +984,9 @@ public class MyLuteceDatabaseApp implements XPageApplication
             {
                 DatabaseUser databaseUser = DatabaseUserHome.findByPrimaryKey( userKey.getUserId( ), _plugin );
 
-                if ( databaseUser != null )
+                // Only an account waiting for the validation of its e-mail is activated: a key (also given by "lost password") never
+                // reactivates an expired or anonymized account
+                if ( ( databaseUser != null ) && ( databaseUser.getStatus( ) == DatabaseUser.STATUS_NOT_ACTIVATED ) )
                 {
                     databaseUser.setStatus( DatabaseUser.STATUS_ACTIVATED );
                     _databaseService.doUpdateUser( databaseUser, _plugin );
