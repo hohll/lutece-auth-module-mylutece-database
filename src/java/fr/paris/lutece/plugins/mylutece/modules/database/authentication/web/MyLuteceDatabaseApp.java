@@ -253,6 +253,8 @@ public class MyLuteceDatabaseApp implements XPageApplication
     private static final String JSP_URL_GET_RESET_PASSWORD_PAGE = "jsp/site/Portal.jsp?page=mylutecedatabase&action=getResetPasswordPage";
     private static final String JSP_URL_MYLUTECE_LOGIN = "jsp/site/Portal.jsp?page=mylutece&action=login";
     private static final String JSP_URL_HOME = "Portal.jsp";
+    // Name of the database authentication service, given to the users it authenticates
+    private static final String AUTH_SERVICE_NAME = AppPropertiesService.getProperty( "mylutece-database.service.name" );
 
     // private fields
     private Plugin _plugin;
@@ -316,7 +318,7 @@ public class MyLuteceDatabaseApp implements XPageApplication
         String strAction = request.getParameter( PARAMETER_ACTION );
         init( request, plugin );
 
-        LuteceUser luteceUser = SecurityService.getInstance( ).getRegisteredUser( request );
+        LuteceUser luteceUser = getRegisteredDatabaseUser( request );
 
         if ( ( luteceUser != null ) && _databaseService.mustUserChangePassword( luteceUser, plugin ) && !ACTION_CHANGE_PASSWORD.equals( strAction ) )
         {
@@ -1029,7 +1031,7 @@ public class MyLuteceDatabaseApp implements XPageApplication
             key = _userKeyService.findByPrimaryKey( strKey );
         }
 
-        LuteceUser luteceUser = SecurityService.getInstance( ).getRegisteredUser( request );
+        LuteceUser luteceUser = getRegisteredDatabaseUser( request );
 
         // Without a key in the request, only a logged in user can reinit his password
         if ( ( key == null ) && ( luteceUser != null ) )
@@ -1585,6 +1587,26 @@ public class MyLuteceDatabaseApp implements XPageApplication
     }
 
     /**
+     * Gets the registered user only when he was authenticated by the database authentication: in a multi-authentication, a user of another provider
+     * (OpenID Connect...) may have the name of a database login without being that database user
+     * 
+     * @param request
+     *            The HTTP request
+     * @return the registered user, or null if there is none or if he comes from another authentication
+     */
+    private LuteceUser getRegisteredDatabaseUser( HttpServletRequest request )
+    {
+        LuteceUser luteceUser = SecurityService.getInstance( ).getRegisteredUser( request );
+
+        if ( ( luteceUser == null ) || !StringUtils.equals( AUTH_SERVICE_NAME, luteceUser.getAuthenticationService( ) ) )
+        {
+            return null;
+        }
+
+        return luteceUser;
+    }
+
+    /**
      * Get the remote user
      * 
      * @param request
@@ -1593,7 +1615,7 @@ public class MyLuteceDatabaseApp implements XPageApplication
      */
     private DatabaseUser getRemoteUser( HttpServletRequest request )
     {
-        LuteceUser luteceUser = SecurityService.getInstance( ).getRegisteredUser( request );
+        LuteceUser luteceUser = getRegisteredDatabaseUser( request );
 
         if ( luteceUser == null )
         {
