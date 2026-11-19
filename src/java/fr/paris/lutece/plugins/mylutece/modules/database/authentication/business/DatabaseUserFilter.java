@@ -42,6 +42,8 @@ import java.io.UnsupportedEncodingException;
 
 import java.net.URLEncoder;
 
+import org.apache.commons.lang3.StringUtils;
+
 import jakarta.servlet.http.HttpServletRequest;
 
 /**
@@ -177,10 +179,10 @@ public class DatabaseUserFilter implements Serializable
         if ( strIsSearch != null )
         {
             bIsSearch = true;
-            _strLogin = request.getParameter( PARAMETER_SEARCH_LOGIN );
-            _strLastName = request.getParameter( PARAMETER_SEARCH_LAST_NAME );
-            _strFirstName = request.getParameter( PARAMETER_SEARCH_FIRST_NAME );
-            _strEmail = request.getParameter( PARAMETER_SEARCH_EMAIL );
+            _strLogin = StringUtils.defaultString( request.getParameter( PARAMETER_SEARCH_LOGIN ) );
+            _strLastName = StringUtils.defaultString( request.getParameter( PARAMETER_SEARCH_LAST_NAME ) );
+            _strFirstName = StringUtils.defaultString( request.getParameter( PARAMETER_SEARCH_FIRST_NAME ) );
+            _strEmail = StringUtils.defaultString( request.getParameter( PARAMETER_SEARCH_EMAIL ) );
         }
         else
         {
@@ -188,6 +190,20 @@ public class DatabaseUserFilter implements Serializable
         }
 
         return bIsSearch;
+    }
+
+    /**
+     * Encodes a search value for an URL, a value missing from the search request being encoded as an empty value
+     *
+     * @param strValue
+     *            the value, possibly null
+     * @return the encoded value
+     * @throws UnsupportedEncodingException
+     *             if the encoding of the URLs is not supported
+     */
+    private static String encode( String strValue ) throws UnsupportedEncodingException
+    {
+        return URLEncoder.encode( StringUtils.defaultString( strValue ), AppPropertiesService.getProperty( PROPERTY_ENCODING_URL ) );
     }
 
     /**
@@ -202,10 +218,10 @@ public class DatabaseUserFilter implements Serializable
 
         try
         {
-            url.addParameter( PARAMETER_SEARCH_LOGIN, URLEncoder.encode( _strLogin, AppPropertiesService.getProperty( PROPERTY_ENCODING_URL ) ) );
-            url.addParameter( PARAMETER_SEARCH_LAST_NAME, URLEncoder.encode( _strLastName, AppPropertiesService.getProperty( PROPERTY_ENCODING_URL ) ) );
-            url.addParameter( PARAMETER_SEARCH_FIRST_NAME, URLEncoder.encode( _strFirstName, AppPropertiesService.getProperty( PROPERTY_ENCODING_URL ) ) );
-            url.addParameter( PARAMETER_SEARCH_EMAIL, URLEncoder.encode( _strEmail, AppPropertiesService.getProperty( PROPERTY_ENCODING_URL ) ) );
+            url.addParameter( PARAMETER_SEARCH_LOGIN, encode( _strLogin ) );
+            url.addParameter( PARAMETER_SEARCH_LAST_NAME, encode( _strLastName ) );
+            url.addParameter( PARAMETER_SEARCH_FIRST_NAME, encode( _strFirstName ) );
+            url.addParameter( PARAMETER_SEARCH_EMAIL, encode( _strEmail ) );
         }
         catch( UnsupportedEncodingException e )
         {
@@ -226,13 +242,13 @@ public class DatabaseUserFilter implements Serializable
         try
         {
             sbUrlAttributes.append(
-                    AMPERSAND + PARAMETER_SEARCH_LOGIN + EQUAL + URLEncoder.encode( _strLogin, AppPropertiesService.getProperty( PROPERTY_ENCODING_URL ) ) );
+                    AMPERSAND + PARAMETER_SEARCH_LOGIN + EQUAL + encode( _strLogin ) );
             sbUrlAttributes.append( AMPERSAND + PARAMETER_SEARCH_LAST_NAME + EQUAL
-                    + URLEncoder.encode( _strLastName, AppPropertiesService.getProperty( PROPERTY_ENCODING_URL ) ) );
+                    + encode( _strLastName ) );
             sbUrlAttributes.append( AMPERSAND + PARAMETER_SEARCH_FIRST_NAME + EQUAL
-                    + URLEncoder.encode( _strFirstName, AppPropertiesService.getProperty( PROPERTY_ENCODING_URL ) ) );
+                    + encode( _strFirstName ) );
             sbUrlAttributes.append(
-                    AMPERSAND + PARAMETER_SEARCH_EMAIL + EQUAL + URLEncoder.encode( _strEmail, AppPropertiesService.getProperty( PROPERTY_ENCODING_URL ) ) );
+                    AMPERSAND + PARAMETER_SEARCH_EMAIL + EQUAL + encode( _strEmail ) );
         }
         catch( UnsupportedEncodingException e )
         {
