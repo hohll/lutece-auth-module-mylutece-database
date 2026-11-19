@@ -155,6 +155,44 @@ public class MvcControllersSecurityTokenTest
         }
     }
 
+    /**
+     * The core reads any parameter prefixed by action_ (resp. view_) as an action (resp. a view): no parameter or model mark of the controllers starts
+     * with these prefixes, and no template posts such a field, except the real actions
+     */
+    @Test
+    public void testNoParameterIsReadAsAnActionOrAView( ) throws Exception
+    {
+        for ( Class<?> controller : List.of( MyLuteceDatabaseApp.class, DatabaseJspBean.class, GroupJspBean.class ) )
+        {
+            for ( java.lang.reflect.Field field : controller.getDeclaredFields( ) )
+            {
+                if ( java.lang.reflect.Modifier.isStatic( field.getModifiers( ) ) && field.getType( ) == String.class
+                        && ( field.getName( ).startsWith( "PARAMETER_" ) || field.getName( ).startsWith( "MARK_" ) ) )
+                {
+                    field.setAccessible( true );
+                    String strValue = (String) field.get( null );
+                    assertFalse( strValue != null && ( strValue.startsWith( "action_" ) || strValue.startsWith( "view_" ) ),
+                            controller.getSimpleName( ) + "." + field.getName( ) + " = " + strValue );
+                }
+            }
+        }
+
+        Pattern prefixedField = Pattern.compile( "(?:name=['\"]|[?&])((?:action|view)_[A-Za-z]+)" );
+        List<Path> listTemplates;
+        try ( Stream<Path> stream = Files.walk( TEMPLATES ) )
+        {
+            listTemplates = stream.filter( path -> path.toString( ).endsWith( ".html" ) ).collect( Collectors.toList( ) );
+        }
+        for ( Path template : listTemplates )
+        {
+            Matcher matcher = prefixedField.matcher( Files.readString( template, StandardCharsets.UTF_8 ) );
+            while ( matcher.find( ) )
+            {
+                assertTrue( matcher.group( 1 ).startsWith( "action_do" ), template + " posts " + matcher.group( 1 ) );
+            }
+        }
+    }
+
     private static Stream<Path> walk( Path folder )
     {
         try

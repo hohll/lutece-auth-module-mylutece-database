@@ -155,7 +155,7 @@ public class MyLuteceDatabaseAppTest extends LuteceTestCase
 
             String url = app.doReinitPassword( request );
             assertNotNull( url );
-            assertTrue( url.contains( "action_successful" ) );
+            assertTrue( url.contains( "success_url" ) );
             assertTrue( DatabaseService.getService( ).checkPassword( strLogin, strNewPassword, plugin ) );
             List<IPassword> history = DatabaseUserHome.selectUserPasswordHistory( user.getUserId( ), plugin );
             assertNotNull( history );
@@ -301,7 +301,7 @@ public class MyLuteceDatabaseAppTest extends LuteceTestCase
             String url = app.doChangePassword( request );
 
             assertNotNull( url );
-            assertTrue( url.contains( "action_successful" ) );
+            assertTrue( url.contains( "success_url" ) );
             assertTrue( DatabaseService.getService( ).checkPassword( strLogin, strNewPassword, plugin ) );
             List<IPassword> history = DatabaseUserHome.selectUserPasswordHistory( user.getUserId( ), plugin );
             assertNotNull( history );

@@ -3,9 +3,9 @@
 	<@cRow class='justify-content-center align-items-center'>
 		<@cCol class='12 col-sm-5'>
             <@cTitle level=2>#i18n{module.mylutece.database.xpage.lost_login.pageTitle}</@cTitle>
-            <#if action_successful?has_content>
+            <#if success_url?has_content>
                 <@cAlert class='success' title='#i18n{module.mylutece.database.message.lost_login.success} : ${email}' >
-                <@cForm name='lostLogin' action=action_successful! >
+                <@cForm name='lostLogin' action=success_url! >
                     <@cBtn type='submit' params={"name": "btnBack"} label='' class='btn btn-secondary' >
                         <@cIcon name='check' /> #i18n{module.mylutece.database.xpage.account.btnBack}" />
                     </@cBtn>

@@ -22,10 +22,10 @@
                 <@cAlert class='danger' title='#i18n{module.mylutece.database.message.create_account.errorCaptcha}' />
             </#if>
         </#if>
-        <#if action_successful?has_content>
+        <#if success_url?has_content>
             <@cTitle level=2>#i18n{module.mylutece.database.xpage.modify_account.pageTitle}</@cTitle>
             <@cAlert class='success' title='#i18n{module.mylutece.database.message.modify_account.success}'>
-            <@cForm name='modifyAccount' action=action_successful!>
+            <@cForm name='modifyAccount' action=success_url!>
                 <@cBtn type='submit' label='#i18n{module.mylutece.database.xpage.account.btnBack}' params={"name": "BtnBack", "value": "#i18n{module.mylutece.database.xpage.account.btnBack}"} />
             </@cForm>
             </@cAlert>
