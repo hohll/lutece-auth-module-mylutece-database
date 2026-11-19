@@ -113,6 +113,83 @@ public class MvcControllersSecurityTokenTest
         }
     }
 
+    /**
+     * The former links of the front office page, naming a view with the action parameter, are actions without token that only redirect to the view
+     * (the core checks the token of every action before the page is called)
+     */
+    @Test
+    public void testFormerActionLinksAreRedirectedToTheirView( )
+    {
+        Set<String> setLegacy = new HashSet<>( );
+        for ( Method method : MyLuteceDatabaseApp.class.getDeclaredMethods( ) )
+        {
+            Action action = method.getAnnotation( Action.class );
+            if ( action != null && action.securityTokenDisabled( ) )
+            {
+                assertTrue( method.getName( ).startsWith( "legacy" ), method.getName( ) + " must only redirect a former link" );
+                setLegacy.add( action.value( ) );
+            }
+        }
+        assertEquals( Set.of( "accessDenied", "changePassword", "viewAccount", "lostPassword", "lostLogin", "createAccount", "modifyAccount",
+                "reinitPassword", "reactivateAccount", "getResetPasswordPage", "delete", "deleteConfirm" ), setLegacy );
+        assertEquals( setLegacy, legacyViews( MyLuteceDatabaseApp.class ) );
+    }
+
+    /**
+     * The links built by the module name the views of the front office page with the view parameter: only the actions (do*) use the action parameter
+     */
+    @Test
+    public void testLinksNameTheViewsWithTheViewParameter( ) throws IOException
+    {
+        Pattern actionLink = Pattern.compile( "page=mylutecedatabase&(?:amp;)?action=(?!do)([A-Za-z]+)" );
+        List<Path> listFiles;
+        try ( Stream<Path> stream = Stream.of( Path.of( "webapp" ), Path.of( "src/java" ), Path.of( "src/sql/plugins/mylutece/modules/database/core" ) )
+                .flatMap( MvcControllersSecurityTokenTest::walk ) )
+        {
+            listFiles = stream.filter( p -> p.toString( ).matches( ".*\\.(html|properties|java|sql)$" ) ).collect( Collectors.toList( ) );
+        }
+        for ( Path file : listFiles )
+        {
+            Matcher matcher = actionLink.matcher( Files.readString( file, StandardCharsets.ISO_8859_1 ) );
+            assertFalse( matcher.find( ), file + " names the view " + ( matcher.find( 0 ) ? matcher.group( 1 ) : "" ) + " with the action parameter" );
+        }
+    }
+
+    private static Stream<Path> walk( Path folder )
+    {
+        try
+        {
+            return Files.walk( folder );
+        }
+        catch( IOException e )
+        {
+            throw new java.io.UncheckedIOException( e );
+        }
+    }
+
+    private static Set<String> legacyViews( Class<?> controller )
+    {
+        Set<String> setViews = new HashSet<>( );
+        for ( Method method : controller.getDeclaredMethods( ) )
+        {
+            View view = method.getAnnotation( View.class );
+            if ( view != null )
+            {
+                setViews.add( view.value( ) );
+            }
+        }
+        Set<String> setLegacy = new HashSet<>( );
+        for ( Method method : controller.getDeclaredMethods( ) )
+        {
+            Action action = method.getAnnotation( Action.class );
+            if ( action != null && action.securityTokenDisabled( ) && setViews.contains( action.value( ) ) )
+            {
+                setLegacy.add( action.value( ) );
+            }
+        }
+        return setLegacy;
+    }
+
     private static Set<String> fileNames( Path folder ) throws IOException
     {
         try ( Stream<Path> stream = Files.list( folder ) )
@@ -133,6 +210,11 @@ public class MvcControllersSecurityTokenTest
                 setTokenActions.add( view.securityTokenAction( ).isEmpty( ) ? view.value( ) : view.securityTokenAction( ) );
             }
             Action action = method.getAnnotation( Action.class );
+            if ( action != null && action.securityTokenDisabled( ) && legacyViews( controller ).contains( action.value( ) ) )
+            {
+                // former link action=<view>: it only redirects to the view
+                continue;
+            }
             if ( action != null )
             {
                 assertFalse( action.securityTokenDisabled( ), controller.getSimpleName( ) + "." + action.value( ) + " must check the token" );

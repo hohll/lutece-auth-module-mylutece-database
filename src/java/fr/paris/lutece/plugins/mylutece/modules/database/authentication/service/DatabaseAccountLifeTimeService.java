@@ -74,7 +74,7 @@ public class DatabaseAccountLifeTimeService implements IAccountLifeTimeService
     private static final String MARK_USER_ID = "user_id";
     private static final String MARK_REF = "ref";
     private static final String PROPERTY_ACCOUNT_REF_ENCRYPT_ALGO = "mylutece-database.account_life_time.refEncryptionAlgorythm";
-    private static final String JSP_URL_REACTIVATE_ACCOUNT = "/jsp/site/Portal.jsp?page=mylutecedatabase&action=reactivateAccount";
+    private static final String JSP_URL_REACTIVATE_ACCOUNT = "/jsp/site/Portal.jsp?page=mylutecedatabase&view=reactivateAccount";
     private static final String CONSTANT_AND = "&";
     private static final String CONSTANT_EQUAL = "=";
     private Plugin _plugin = PluginService.getPlugin( DatabasePlugin.PLUGIN_NAME );

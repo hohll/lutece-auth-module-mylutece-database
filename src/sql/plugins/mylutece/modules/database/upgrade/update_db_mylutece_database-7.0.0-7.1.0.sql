@@ -8,3 +8,11 @@
 DELETE FROM core_datastore WHERE entity_key IN ('mylutece.security.public_url.mylutece-database.url.doActionsXPage','mylutece.security.public_url.mylutece-database.url.validateAccount.page');
 INSERT INTO core_datastore(entity_key,entity_value) VALUES('mylutece.security.public_url.mylutece-database.url.doActionsXPage','jsp/site/Portal.jsp?page=mylutecedatabase&action=do*');
 INSERT INTO core_datastore(entity_key,entity_value) VALUES('mylutece.security.public_url.mylutece-database.url.validateAccount.page','jsp/site/Portal.jsp?page=mylutecedatabase&view=validateAccount');
+
+--
+-- The public pages of the XPage mylutecedatabase are named with the view parameter (the core checks the security token of every action)
+--
+UPDATE core_datastore SET entity_value = 'jsp/site/Portal.jsp?page=mylutecedatabase&view=createAccount' WHERE entity_key = 'mylutece.security.public_url.mylutece-database.url.createAccount.page';
+UPDATE core_datastore SET entity_value = 'jsp/site/Portal.jsp?page=mylutecedatabase&view=lostPassword' WHERE entity_key = 'mylutece.security.public_url.mylutece-database.url.lostPassword.page';
+UPDATE core_datastore SET entity_value = 'jsp/site/Portal.jsp?page=mylutecedatabase&view=lostLogin' WHERE entity_key = 'mylutece.security.public_url.mylutece-database.url.lostLogin.page';
+UPDATE core_datastore SET entity_value = 'jsp/site/Portal.jsp?page=mylutecedatabase&view=reinitPassword' WHERE entity_key = 'mylutece.security.public_url.mylutece-database.url.reinitPassword.page';

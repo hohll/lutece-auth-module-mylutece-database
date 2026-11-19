@@ -33,11 +33,6 @@
  */
 package fr.paris.lutece.plugins.mylutece.modules.database.authentication.web;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Enumeration;
-import java.util.HashSet;
-import java.util.Set;
 import java.sql.Timestamp;
 import java.util.Collection;
 import java.util.HashMap;
@@ -51,7 +46,6 @@ import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 import jakarta.inject.Named;
 import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletRequestWrapper;
 
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -179,12 +173,11 @@ public class MyLuteceDatabaseApp extends MVCApplication
     private static final String ACTION_GET_RESET_PASSWORD = "getResetPasswordPage";
 
     static final String XPAGE_NAME = "mylutecedatabase";
-    // Views: they keep the names of the former actions of the page, still accepted as action=<view> by the links already sent
+    // Views: they keep the names of the former actions of the page. The links of the module name them with the view parameter; the former links
+    // (action=<view>, e-mails already sent, bookmarks) are redirected to the view by an action without token (see the legacy actions)
     private static final String VIEW_VALIDATE_ACCOUNT = "validateAccount";
-    private static final Set<String> LEGACY_ACTION_VIEWS = new HashSet<>( Arrays.asList( ACTION_CHANGE_PASSWORD, ACTION_DELETE, ACTION_CONFIRM_DELETE,
-            ACTION_VIEW_ACCOUNT, ACTION_MODIFY_ACCOUNT, ACTION_LOST_PASSWORD, ACTION_LOST_LOGIN, ACTION_ACCESS_DENIED, ACTION_CREATE_ACCOUNT,
-            ACTION_REINIT_PASSWORD, ACTION_REACTIVATE_ACCOUNT, ACTION_GET_RESET_PASSWORD, VIEW_VALIDATE_ACCOUNT ) );
     private static final String PARAMETER_VIEW = "view";
+    private static final String PARAMETER_PAGE = "page";
 
     // Actions: posted with the security token of their view
     static final String ACTION_DO_CREATE_ACCOUNT = "doCreateAccount";
@@ -275,7 +268,7 @@ public class MyLuteceDatabaseApp extends MVCApplication
     private static final String MESSAGE_MUST_CHANGE_PASSWORD = "module.mylutece.database.message.userMustChangePassword";
 
     // JSP URL
-    private static final String JSP_URL_GET_RESET_PASSWORD_PAGE = "jsp/site/Portal.jsp?page=mylutecedatabase&action=getResetPasswordPage";
+    private static final String JSP_URL_GET_RESET_PASSWORD_PAGE = "jsp/site/Portal.jsp?page=mylutecedatabase&view=getResetPasswordPage";
     private static final String JSP_URL_MYLUTECE_LOGIN = "jsp/site/Portal.jsp?page=mylutece&action=login";
     private static final String JSP_URL_PORTAL = "jsp/site/Portal.jsp";
     // Name of the database authentication service, given to the users it authenticates
@@ -326,77 +319,56 @@ public class MyLuteceDatabaseApp extends MVCApplication
     }
 
     /**
-     * {@inheritDoc} A user who must change his password is sent to the change of his password from any view. The former links of the page named their
-     * view with the action parameter: they are still accepted.
+     * {@inheritDoc} A user who must change his password is sent to the change of his password from any view.
      */
     @Override
     public XPage getPage( HttpServletRequest request, int nMode, Plugin plugin ) throws UserNotSignedException, SiteMessageException
     {
         init( request, plugin );
 
-        HttpServletRequest requestPage = getLegacyViewRequest( request );
-        boolean bView = requestPage.getParameter( PARAMETER_ACTION ) == null;
+        boolean bView = request.getParameter( PARAMETER_ACTION ) == null;
         LuteceUser luteceUser = getRegisteredDatabaseUser( request );
 
-        if ( bView && ( luteceUser != null ) && !ACTION_CHANGE_PASSWORD.equals( requestPage.getParameter( PARAMETER_VIEW ) )
+        if ( bView && ( luteceUser != null ) && !ACTION_CHANGE_PASSWORD.equals( request.getParameter( PARAMETER_VIEW ) )
                 && _databaseService.mustUserChangePassword( luteceUser, plugin ) )
         {
             getMessageResetPassword( request );
         }
 
-        return super.getPage( requestPage, nMode, plugin );
+        return super.getPage( request, nMode, plugin );
     }
 
     /**
-     * Gets the request of a former link naming its view with the action parameter, as a request naming it with the view parameter
+     * Redirects a former link, naming a view of the page with the action parameter, to this view: the core checks the security token of every
+     * action of the page before the page is called, so a former link reaches the page as an action without token, that only redirects. The
+     * parameters of the link are kept.
      * 
      * @param request
      *            The HTTP request
-     * @return The request to dispatch
+     * @param strView
+     *            The view
+     * @return The redirection to the view
      */
-    private static HttpServletRequest getLegacyViewRequest( HttpServletRequest request )
+    private XPage redirectLegacyLink( HttpServletRequest request, String strView )
     {
-        final String strView = request.getParameter( PARAMETER_ACTION );
+        StringBuilder sbUrl = new StringBuilder( AppPathService.getBaseUrl( request ) ).append( JSP_URL_PORTAL ).append( '?' ).append( PARAMETER_PAGE )
+                .append( '=' ).append( XPAGE_NAME ).append( '&' ).append( PARAMETER_VIEW ).append( '=' ).append( strView );
+        String strQuery = request.getQueryString( );
 
-        if ( ( request.getParameter( PARAMETER_VIEW ) != null ) || ( strView == null ) || !LEGACY_ACTION_VIEWS.contains( strView ) )
+        if ( strQuery != null )
         {
-            return request;
+            for ( String strParameter : strQuery.split( "&" ) )
+            {
+                String strName = strParameter.split( "=", 2 ) [0];
+
+                if ( !strName.isEmpty( ) && !PARAMETER_PAGE.equals( strName ) && !PARAMETER_ACTION.equals( strName ) && !PARAMETER_VIEW.equals( strName ) )
+                {
+                    sbUrl.append( '&' ).append( strParameter );
+                }
+            }
         }
 
-        final Map<String, String [ ]> mapParameters = new HashMap<>( request.getParameterMap( ) );
-        mapParameters.remove( PARAMETER_ACTION );
-        mapParameters.put( PARAMETER_VIEW, new String [ ] {
-                strView
-        } );
-
-        return new HttpServletRequestWrapper( request )
-        {
-            @Override
-            public String getParameter( String strName )
-            {
-                String [ ] values = mapParameters.get( strName );
-
-                return ( values == null || values.length == 0 ) ? null : values [0];
-            }
-
-            @Override
-            public String [ ] getParameterValues( String strName )
-            {
-                return mapParameters.get( strName );
-            }
-
-            @Override
-            public Map<String, String [ ]> getParameterMap( )
-            {
-                return Collections.unmodifiableMap( mapParameters );
-            }
-
-            @Override
-            public Enumeration<String> getParameterNames( )
-            {
-                return Collections.enumeration( mapParameters.keySet( ) );
-            }
-        };
+        return redirect( request, sbUrl.toString( ) );
     }
 
     /**
@@ -671,6 +643,164 @@ public class MyLuteceDatabaseApp extends MVCApplication
     public XPage viewValidateAccount( HttpServletRequest request )
     {
         return redirectTo( request, doValidateAccount( request ) );
+    }
+
+    // Former links: action=<view>, redirected to the view (no change of data, hence no token)
+
+    /**
+     * Former link of the view ACTION_ACCESS_DENIED: redirected to the view
+     * 
+     * @param request
+     *            The HTTP request
+     * @return The redirection to the view
+     */
+    @Action( value = ACTION_ACCESS_DENIED, securityTokenDisabled = true )
+    public XPage legacyAccessDenied( HttpServletRequest request )
+    {
+        return redirectLegacyLink( request, ACTION_ACCESS_DENIED );
+    }
+
+    /**
+     * Former link of the view ACTION_CHANGE_PASSWORD: redirected to the view
+     * 
+     * @param request
+     *            The HTTP request
+     * @return The redirection to the view
+     */
+    @Action( value = ACTION_CHANGE_PASSWORD, securityTokenDisabled = true )
+    public XPage legacyChangePassword( HttpServletRequest request )
+    {
+        return redirectLegacyLink( request, ACTION_CHANGE_PASSWORD );
+    }
+
+    /**
+     * Former link of the view ACTION_VIEW_ACCOUNT: redirected to the view
+     * 
+     * @param request
+     *            The HTTP request
+     * @return The redirection to the view
+     */
+    @Action( value = ACTION_VIEW_ACCOUNT, securityTokenDisabled = true )
+    public XPage legacyViewAccount( HttpServletRequest request )
+    {
+        return redirectLegacyLink( request, ACTION_VIEW_ACCOUNT );
+    }
+
+    /**
+     * Former link of the view ACTION_LOST_PASSWORD: redirected to the view
+     * 
+     * @param request
+     *            The HTTP request
+     * @return The redirection to the view
+     */
+    @Action( value = ACTION_LOST_PASSWORD, securityTokenDisabled = true )
+    public XPage legacyLostPassword( HttpServletRequest request )
+    {
+        return redirectLegacyLink( request, ACTION_LOST_PASSWORD );
+    }
+
+    /**
+     * Former link of the view ACTION_LOST_LOGIN: redirected to the view
+     * 
+     * @param request
+     *            The HTTP request
+     * @return The redirection to the view
+     */
+    @Action( value = ACTION_LOST_LOGIN, securityTokenDisabled = true )
+    public XPage legacyLostLogin( HttpServletRequest request )
+    {
+        return redirectLegacyLink( request, ACTION_LOST_LOGIN );
+    }
+
+    /**
+     * Former link of the view ACTION_CREATE_ACCOUNT: redirected to the view
+     * 
+     * @param request
+     *            The HTTP request
+     * @return The redirection to the view
+     */
+    @Action( value = ACTION_CREATE_ACCOUNT, securityTokenDisabled = true )
+    public XPage legacyCreateAccount( HttpServletRequest request )
+    {
+        return redirectLegacyLink( request, ACTION_CREATE_ACCOUNT );
+    }
+
+    /**
+     * Former link of the view ACTION_MODIFY_ACCOUNT: redirected to the view
+     * 
+     * @param request
+     *            The HTTP request
+     * @return The redirection to the view
+     */
+    @Action( value = ACTION_MODIFY_ACCOUNT, securityTokenDisabled = true )
+    public XPage legacyModifyAccount( HttpServletRequest request )
+    {
+        return redirectLegacyLink( request, ACTION_MODIFY_ACCOUNT );
+    }
+
+    /**
+     * Former link of the view ACTION_REINIT_PASSWORD: redirected to the view
+     * 
+     * @param request
+     *            The HTTP request
+     * @return The redirection to the view
+     */
+    @Action( value = ACTION_REINIT_PASSWORD, securityTokenDisabled = true )
+    public XPage legacyReinitPassword( HttpServletRequest request )
+    {
+        return redirectLegacyLink( request, ACTION_REINIT_PASSWORD );
+    }
+
+    /**
+     * Former link of the view ACTION_REACTIVATE_ACCOUNT: redirected to the view
+     * 
+     * @param request
+     *            The HTTP request
+     * @return The redirection to the view
+     */
+    @Action( value = ACTION_REACTIVATE_ACCOUNT, securityTokenDisabled = true )
+    public XPage legacyReactivateAccount( HttpServletRequest request )
+    {
+        return redirectLegacyLink( request, ACTION_REACTIVATE_ACCOUNT );
+    }
+
+    /**
+     * Former link of the view ACTION_GET_RESET_PASSWORD: redirected to the view
+     * 
+     * @param request
+     *            The HTTP request
+     * @return The redirection to the view
+     */
+    @Action( value = ACTION_GET_RESET_PASSWORD, securityTokenDisabled = true )
+    public XPage legacyGetResetPassword( HttpServletRequest request )
+    {
+        return redirectLegacyLink( request, ACTION_GET_RESET_PASSWORD );
+    }
+
+    /**
+     * Former link of the view ACTION_DELETE: redirected to the view
+     * 
+     * @param request
+     *            The HTTP request
+     * @return The redirection to the view
+     */
+    @Action( value = ACTION_DELETE, securityTokenDisabled = true )
+    public XPage legacyDelete( HttpServletRequest request )
+    {
+        return redirectLegacyLink( request, ACTION_DELETE );
+    }
+
+    /**
+     * Former link of the view ACTION_CONFIRM_DELETE: redirected to the view
+     * 
+     * @param request
+     *            The HTTP request
+     * @return The redirection to the view
+     */
+    @Action( value = ACTION_CONFIRM_DELETE, securityTokenDisabled = true )
+    public XPage legacyConfirmDelete( HttpServletRequest request )
+    {
+        return redirectLegacyLink( request, ACTION_CONFIRM_DELETE );
     }
 
     // Actions
