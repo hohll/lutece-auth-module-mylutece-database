@@ -8,10 +8,10 @@ INSERT INTO mylutece_database_user_parameter VALUES ('account_creation_validatio
 INSERT INTO mylutece_database_user_parameter VALUES ('auto_login_after_validation_email', 'false');
 INSERT INTO mylutece_database_user_parameter VALUES ('enable_jcaptcha', 'false');
 INSERT INTO mylutece_database_user_parameter VALUES ('force_change_password_reinit', '');
-INSERT INTO mylutece_database_user_parameter VALUES ('password_minimum_length', '8');
-INSERT INTO mylutece_database_user_parameter VALUES ('password_format_upper_lower_case', 'false');
-INSERT INTO mylutece_database_user_parameter VALUES ('password_format_numero', 'false');
-INSERT INTO mylutece_database_user_parameter VALUES ('password_format_special_characters', 'false');
+INSERT INTO mylutece_database_user_parameter VALUES ('password_minimum_length', '12');
+INSERT INTO mylutece_database_user_parameter VALUES ('password_format_upper_lower_case', 'true');
+INSERT INTO mylutece_database_user_parameter VALUES ('password_format_numero', 'true');
+INSERT INTO mylutece_database_user_parameter VALUES ('password_format_special_characters', 'true');
 INSERT INTO mylutece_database_user_parameter VALUES ('password_duration', '');
 INSERT INTO mylutece_database_user_parameter VALUES ('password_history_size', '');
 INSERT INTO mylutece_database_user_parameter VALUES ('maximum_number_password_change', '');

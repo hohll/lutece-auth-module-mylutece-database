@@ -68,6 +68,8 @@ import jakarta.inject.Inject;
 public class MyLuteceDatabaseAppTest extends LuteceTestCase
 {
 
+    // A password that follows the default rules of a new installation (12 characters, upper and lower case, digit, special character)
+    private static final String STRONG_PASSWORD = "Junit-Passw0rd!";
     private Plugin plugin;
 
     @Inject
@@ -97,8 +99,8 @@ public class MyLuteceDatabaseAppTest extends LuteceTestCase
         request.addParameter( "plugin_name", plugin.getName( ) );
         request.addParameter( "login", strLogin );
         request.addParameter( "email", strLogin + "@junit.fr" );
-        request.addParameter( "password", "junitjunit" );
-        request.addParameter( "confirmation_password", "junitjunit" );
+        request.addParameter( "password", STRONG_PASSWORD );
+        request.addParameter( "confirmation_password", STRONG_PASSWORD );
         request.addParameter( "first_name", strLogin );
         request.addParameter( "last_name", strLogin );
 
@@ -194,7 +196,7 @@ public class MyLuteceDatabaseAppTest extends LuteceTestCase
             user.setLogin( strLogin );
             user.setFirstName( strLogin );
             user.setLastName( strLogin );
-            String strPassword = "junitjunit";
+            String strPassword = STRONG_PASSWORD;
             DatabaseService.getService( ).doCreateUser( user, strPassword, plugin );
             userKey = new DatabaseUserKey( );
             userKey.setKey( getRandomName( ) );
@@ -206,7 +208,7 @@ public class MyLuteceDatabaseAppTest extends LuteceTestCase
             DatabaseUserParameterService.getService( ).update( userParam, plugin );
             MockHttpServletRequest request = new MockHttpServletRequest( );
             request.addParameter( "key", userKey.getKey( ) );
-            String strNewPassword = "junitjunit" + getRandomName( );
+            String strNewPassword = STRONG_PASSWORD + getRandomName( );
             request.addParameter( "plugin_name", plugin.getName( ) );
             request.addParameter( "password", strNewPassword );
             request.addParameter( "confirmation_password", strNewPassword );
@@ -273,7 +275,7 @@ public class MyLuteceDatabaseAppTest extends LuteceTestCase
             user.setLogin( strLogin );
             user.setFirstName( strLogin );
             user.setLastName( strLogin );
-            String strPassword = "junitjunit";
+            String strPassword = STRONG_PASSWORD;
             DatabaseService.getService( ).doCreateUser( user, strPassword, plugin );
             userKey = new DatabaseUserKey( );
             userKey.setKey( getRandomName( ) );
@@ -283,7 +285,7 @@ public class MyLuteceDatabaseAppTest extends LuteceTestCase
             userParam.setName( Integer.toString( 10 ) );
             userParam.setCode( "password_history_size" );
             DatabaseUserParameterService.getService( ).update( userParam, plugin );
-            String strNewPassword = "junitjunit" + getRandomName( );
+            String strNewPassword = STRONG_PASSWORD + getRandomName( );
             DatabaseService.getService( ).doInsertNewPasswordInHistory( strNewPassword, user.getUserId( ), plugin );
             int previousPasswordHistorySize = DatabaseUserHome.selectUserPasswordHistory( user.getUserId( ), plugin ).size( );
             MockHttpServletRequest request = new MockHttpServletRequest( );
@@ -341,13 +343,13 @@ public class MyLuteceDatabaseAppTest extends LuteceTestCase
             user.setLogin( strLogin );
             user.setFirstName( strLogin );
             user.setLastName( strLogin );
-            String strPassword = "junitjunit";
+            String strPassword = STRONG_PASSWORD;
             DatabaseService.getService( ).doCreateUser( user, strPassword, plugin );
             ReferenceItem userParam = new ReferenceItem( );
             userParam.setName( Integer.toString( 10 ) );
             userParam.setCode( "password_history_size" );
             DatabaseUserParameterService.getService( ).update( userParam, plugin );
-            String strNewPassword = "junitjunit" + getRandomName( );
+            String strNewPassword = STRONG_PASSWORD + getRandomName( );
             MockHttpServletRequest request = new MockHttpServletRequest( );
             BaseUser loggedInUser = DatabaseHome.findLuteceUserByLogin( strLogin, plugin, new BaseAuthentication( ) );
             SecurityService.getInstance( ).registerUser( request, loggedInUser );
@@ -406,13 +408,13 @@ public class MyLuteceDatabaseAppTest extends LuteceTestCase
             user.setLogin( strLogin );
             user.setFirstName( strLogin );
             user.setLastName( strLogin );
-            String strPassword = "junitjunit";
+            String strPassword = STRONG_PASSWORD;
             DatabaseService.getService( ).doCreateUser( user, strPassword, plugin );
             ReferenceItem userParam = new ReferenceItem( );
             userParam.setName( Integer.toString( 10 ) );
             userParam.setCode( "password_history_size" );
             DatabaseUserParameterService.getService( ).update( userParam, plugin );
-            String strNewPassword = "junitjunit" + getRandomName( );
+            String strNewPassword = STRONG_PASSWORD + getRandomName( );
             DatabaseService.getService( ).doInsertNewPasswordInHistory( strNewPassword, user.getUserId( ), plugin );
             int previousPasswordHistorySize = DatabaseUserHome.selectUserPasswordHistory( user.getUserId( ), plugin ).size( );
             MockHttpServletRequest request = new MockHttpServletRequest( );
