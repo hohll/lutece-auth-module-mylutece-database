@@ -89,7 +89,7 @@
                     <@cInput class='form-control ${classEmail?if_exists}' name='email' maxlength=100 value=(user.email)?if_exists />
                 </@cField>
                 <@cField label='#i18n{module.mylutece.database.xpage.create_account.password}' for='password' required=true>
-                    <@cInputPassword label='' class='form-control ${classPassword?if_exists}' name='password' passwordMeter=true pmConfirmFieldId='confirmation_password' />
+                    <@cInputPassword label='' class='form-control ${classPassword?if_exists}' name='password' passwordMeter=true pmConfirmFieldId='confirmation_password' helpMsg=password_help!'' />
                 </@cField>
                 <@cField label='#i18n{module.mylutece.database.xpage.create_account.confirmation}' for='confirmation_password' required=true>
                     <@cInputPassword label='' class='form-control ${classConfirmation?if_exists}' id='confirmation_password' helpMsg='' name='confirmation_password' />

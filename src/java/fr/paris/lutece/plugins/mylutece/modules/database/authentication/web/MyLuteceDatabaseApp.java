@@ -34,6 +34,7 @@
 package fr.paris.lutece.plugins.mylutece.modules.database.authentication.web;
 
 import java.sql.Timestamp;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -129,6 +130,11 @@ public class MyLuteceDatabaseApp extends MVCApplication
     private static final String MARK_ATTRIBUTES_LIST = "attributes_list";
     private static final String MARK_PASSWORD_MINIMUM_LENGTH = "password_minimum_length";
     private static final String MARK_PASSWORD_FORMAT_MESSAGE = "password_format_message";
+    private static final String MARK_PASSWORD_HELP = "password_help";
+    private static final String MARK_PASSWORD_FORMAT_UPPER_LOWER_CASE = "password_format_upper_lower_case";
+    private static final String MARK_PASSWORD_FORMAT_NUMERO = "password_format_numero";
+    private static final String MARK_PASSWORD_FORMAT_SPECIAL_CHARACTERS = "password_format_special_characters";
+    private static final String MESSAGE_PASSWORD_HELP_MINIMUM_LENGTH = "module.mylutece.database.xpage.passwordHelp.minimumLength";
     private static final String MARK_USER_ID = "user_id";
     private static final String MARK_REF = "ref";
     private static final String MARK_SITE_NAME = "site_name";
@@ -1233,6 +1239,7 @@ public class MyLuteceDatabaseApp extends MVCApplication
             model.put( MARK_JCAPTCHA, HtmlMarkup.of( _captchaService.get( ).getHtmlCode( ) ) );
         }
 
+        model.put( MARK_PASSWORD_HELP, getPasswordHelp( ) );
         page.setContent( getContentWithToken( TEMPLATE_CREATE_ACCOUNT_PAGE, model ) );
         page.setPathLabel( I18nService.getLocalizedString( PROPERTY_CREATE_ACCOUNT_LABEL, _locale ) );
         page.setTitle( I18nService.getLocalizedString( PROPERTY_CREATE_ACCOUNT_TITLE, _locale ) );
@@ -1557,6 +1564,7 @@ public class MyLuteceDatabaseApp extends MVCApplication
             model.put( MARK_KEY, strKey );
             model.put( MARK_ACTION_SUCCESSFUL, request.getParameter( PARAMETER_ACTION_SUCCESSFUL ) );
 
+            model.put( MARK_PASSWORD_HELP, getPasswordHelp( ) );
             page.setContent( getContentWithToken( TEMPLATE_REINIT_PASSWORD_PAGE, model ) );
             page.setPathLabel( I18nService.getLocalizedString( PROPERTY_REINIT_PASSWORD_LABEL, _locale ) );
             page.setTitle( I18nService.getLocalizedString( PROPERTY_REINIT_PASSWORD_TITLE, _locale ) );
@@ -1758,6 +1766,7 @@ public class MyLuteceDatabaseApp extends MVCApplication
             model.put( MARK_PASSWORD_MINIMUM_LENGTH, I18nService.getLocalizedString( MESSAGE_MINIMUM_PASSWORD_LENGTH, param, _locale ) );
         }
 
+        model.put( MARK_PASSWORD_HELP, getPasswordHelp( ) );
         page.setContent( getContentWithToken( TEMPLATE_CHANGE_PASSWORD_PAGE, model ) );
         page.setPathLabel( I18nService.getLocalizedString( PROPERTY_CHANGE_PASSWORD_LABEL, _locale ) );
         page.setTitle( I18nService.getLocalizedString( PROPERTY_CHANGE_PASSWORD_TITLE, _locale ) );
@@ -2269,5 +2278,33 @@ public class MyLuteceDatabaseApp extends MVCApplication
         MyLuteceUserFieldService.doRemoveUserFields( user.getUserId( ), request, request.getLocale( ) );
         _userKeyService.removeByIdUser( user.getUserId( ) );
         SecurityService.getInstance( ).logoutUser( request );
+    }
+
+    /**
+     * Build the help of a new password from the rules really checked (SecurityUtils.checkPasswordForFrontOffice): the minimum length and the
+     * active format rules of the security parameters
+     *
+     * @return the help, empty when no rule is set
+     */
+    public String getPasswordHelp( )
+    {
+        List<String> listRules = new ArrayList<>( );
+        int nMinimumLength = SecurityUtils.getIntegerSecurityParameter( _userParamService, _plugin, MARK_PASSWORD_MINIMUM_LENGTH );
+
+        if ( nMinimumLength > 0 )
+        {
+            listRules.add( I18nService.getLocalizedString( MESSAGE_PASSWORD_HELP_MINIMUM_LENGTH, new Object [ ] {
+                    nMinimumLength
+            }, _locale ) );
+        }
+
+        if ( SecurityUtils.getBooleanSecurityParameter( _userParamService, _plugin, MARK_PASSWORD_FORMAT_UPPER_LOWER_CASE )
+                || SecurityUtils.getBooleanSecurityParameter( _userParamService, _plugin, MARK_PASSWORD_FORMAT_NUMERO )
+                || SecurityUtils.getBooleanSecurityParameter( _userParamService, _plugin, MARK_PASSWORD_FORMAT_SPECIAL_CHARACTERS ) )
+        {
+            listRules.add( SecurityUtils.getMessageFrontPasswordFormat( _locale, _userParamService, _plugin ) + "." );
+        }
+
+        return String.join( " ", listRules );
     }
 }

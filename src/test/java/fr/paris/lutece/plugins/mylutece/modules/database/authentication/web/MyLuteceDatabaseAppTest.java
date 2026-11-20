@@ -57,6 +57,7 @@ import fr.paris.lutece.portal.service.plugin.Plugin;
 import fr.paris.lutece.portal.service.plugin.PluginService;
 import fr.paris.lutece.portal.service.message.SiteMessageException;
 import fr.paris.lutece.portal.service.security.SecurityService;
+import fr.paris.lutece.portal.service.i18n.I18nService;
 import fr.paris.lutece.test.LuteceTestCase;
 import fr.paris.lutece.test.mocks.MockHttpServletRequest;
 import fr.paris.lutece.portal.web.xpages.XPage;
@@ -106,6 +107,63 @@ public class MyLuteceDatabaseAppTest extends LuteceTestCase
         int userId = DatabaseUserHome.findDatabaseUserIdFromLogin( strLogin, plugin );
         assertFalse( "The user has not been created", 0 == userId );
         DatabaseUserHome.remove( DatabaseUserHome.findByPrimaryKey( userId, plugin ), plugin );
+    }
+
+    /**
+     * The help of a new password lists the rules really checked: the minimum length and the active format rules only
+     */
+    @Test
+    public void testPasswordHelpFollowsTheSecurityParameters( )
+    {
+        String strOrigLength = getParameter( "password_minimum_length" );
+        String strOrigNumero = getParameter( "password_format_numero" );
+        String strOrigUpperLower = getParameter( "password_format_upper_lower_case" );
+        String strOrigSpecial = getParameter( "password_format_special_characters" );
+        try
+        {
+            MockHttpServletRequest request = new MockHttpServletRequest( );
+            app.init( request, plugin );
+
+            setParameter( "password_minimum_length", "12" );
+            setParameter( "password_format_numero", "false" );
+            setParameter( "password_format_upper_lower_case", "false" );
+            setParameter( "password_format_special_characters", "false" );
+            String strLengthHelp = I18nService.getLocalizedString( "module.mylutece.database.xpage.passwordHelp.minimumLength", new Object [ ] {
+                    12
+            }, request.getLocale( ) );
+            assertEquals( strLengthHelp, app.getPasswordHelp( ), "only the minimum length is checked" );
+
+            setParameter( "password_format_numero", "true" );
+            assertEquals( strLengthHelp + " "
+                    + SecurityUtils.getMessageFrontPasswordFormat( request.getLocale( ), DatabaseUserParameterService.getService( ), plugin ) + ".",
+                    app.getPasswordHelp( ) );
+
+            setParameter( "password_minimum_length", "0" );
+            setParameter( "password_format_numero", "false" );
+            assertEquals( "", app.getPasswordHelp( ) );
+        }
+        finally
+        {
+            setParameter( "password_minimum_length", strOrigLength );
+            setParameter( "password_format_numero", strOrigNumero );
+            setParameter( "password_format_upper_lower_case", strOrigUpperLower );
+            setParameter( "password_format_special_characters", strOrigSpecial );
+        }
+    }
+
+    private String getParameter( String strKey )
+    {
+        ReferenceItem item = DatabaseUserParameterService.getService( ).findByKey( strKey, plugin );
+
+        return ( item == null ) ? "" : item.getName( );
+    }
+
+    private void setParameter( String strKey, String strValue )
+    {
+        ReferenceItem item = new ReferenceItem( );
+        item.setCode( strKey );
+        item.setName( strValue );
+        DatabaseUserParameterService.getService( ).update( item, plugin );
     }
 
     /**
