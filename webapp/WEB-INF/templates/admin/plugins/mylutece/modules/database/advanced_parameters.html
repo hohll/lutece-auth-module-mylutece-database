@@ -42,12 +42,13 @@
 		<@formGroup labelFor='password_minimum_length' labelKey='#i18n{mylutece.message.password.labelMinimumPasswordLength}' mandatory=true>
 			<@input type='text' name='password_minimum_length' value='${password_minimum_length!}' />
 		</@formGroup>
+		<#-- The password format rules are checked whenever they are on: shown in both modes -->
+		<@formGroup labelKey='#i18n{mylutece.message.password.labelPasswordFormat}'>
+			<@checkBox orientation='switch' labelKey='#i18n{mylutece.message.password.labelPasswordFormatUpperLowerCase}' name='password_format_upper_lower_case' id='password_format_upper_lower_case' value='true' checked=(password_format_upper_lower_case?? && password_format_upper_lower_case) />
+			<@checkBox orientation='switch' labelKey='#i18n{mylutece.message.password.labelPasswordFormatNumero}' name='password_format_numero' id='password_format_numero' value='true' checked=(password_format_numero?? && password_format_numero) />
+			<@checkBox orientation='switch' labelKey='#i18n{mylutece.message.password.labelPasswordFormatSpecialCharacters}' name='password_format_special_characters' id='password_format_special_characters' value='true' checked=(password_format_special_characters?? && password_format_special_characters) />
+		</@formGroup>
 		<#if use_advanced_security_parameters>
-			<@formGroup labelKey='#i18n{mylutece.message.password.labelPasswordFormat}'>
-				<@checkBox orientation='switch' labelKey='#i18n{mylutece.message.password.labelPasswordFormatUpperLowerCase}' name='password_format_upper_lower_case' id='password_format_upper_lower_case' value='true' checked=(password_format_upper_lower_case?? && password_format_upper_lower_case) />
-				<@checkBox orientation='switch' labelKey='#i18n{mylutece.message.password.labelPasswordFormatNumero}' name='password_format_numero' id='password_format_numero' value='true' checked=(password_format_numero?? && password_format_numero) />
-				<@checkBox orientation='switch' labelKey='#i18n{mylutece.message.password.labelPasswordFormatSpecialCharacters}' name='password_format_special_characters' id='password_format_special_characters' value='true' checked=(password_format_special_characters?? && password_format_special_characters) />
-			</@formGroup>
 			<@formGroup labelKey='#i18n{mylutece.message.password.labelPasswordDuration}'>
 				<@input type='text' name='password_duration' value='${password_duration!}' />
 			</@formGroup>

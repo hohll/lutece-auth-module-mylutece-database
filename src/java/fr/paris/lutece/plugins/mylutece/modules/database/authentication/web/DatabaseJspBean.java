@@ -1085,6 +1085,16 @@ public class DatabaseJspBean extends MVCAdminJspBean
         }
 
         SecurityUtils.updateSecurityParameters( _userParamService, request, getPlugin( ) );
+
+        // The password format rules are shown and saved in both modes: an unchecked switch is not posted
+        Map<String, Boolean> mapPasswordFormatRules = new HashMap<>( );
+
+        for ( String strRule : DatabaseService.PASSWORD_FORMAT_RULES )
+        {
+            mapPasswordFormatRules.put( strRule, Boolean.parseBoolean( request.getParameter( strRule ) ) );
+        }
+
+        _databaseService.updatePasswordFormatRules( mapPasswordFormatRules, getPlugin( ) );
         SecurityUtils.updateLargeParameterValue( _userParamService, getPlugin( ), PARAMETER_BANNED_DOMAIN_NAMES,
                 request.getParameter( PARAMETER_BANNED_DOMAIN_NAMES ) );
 
@@ -1232,7 +1242,10 @@ public class DatabaseJspBean extends MVCAdminJspBean
     {
         if ( SecurityUtils.isAdvancedSecurityParametersUsed( _userParamService, getPlugin( ) ) )
         {
+            // The password format rules are not part of the advanced mode: they are kept
+            Map<String, Boolean> mapPasswordFormatRules = _databaseService.getPasswordFormatRules( getPlugin( ) );
             SecurityUtils.removeAdvancedSecurityParameters( _userParamService, getPlugin( ) );
+            _databaseService.updatePasswordFormatRules( mapPasswordFormatRules, getPlugin( ) );
         }
         else
         {

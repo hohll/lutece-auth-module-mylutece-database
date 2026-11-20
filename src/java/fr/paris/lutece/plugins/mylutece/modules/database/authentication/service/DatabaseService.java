@@ -125,6 +125,10 @@ public class DatabaseService
     private static final String MARK_SITE_URL = "site_url";
     private static final String MARK_BANNED_DOMAIN_NAMES = "banned_domain_names";
 
+    /** The password format rules: checked whenever they are on, so always shown and saved, whatever the advanced security parameters */
+    public static final List<String> PASSWORD_FORMAT_RULES = List.of( "password_format_upper_lower_case", "password_format_numero",
+            "password_format_special_characters" );
+
     // PARAMETERS
     private static final String PARAMETER_ACCOUNT_CREATION_VALIDATION_EMAIL = "account_creation_validation_email";
     private static final String PARAMETER_ACCOUNT_REACTIVATED_MAIL_SENDER = "account_reactivated_mail_sender";
@@ -204,6 +208,11 @@ public class DatabaseService
             model.put( MARK_BANNED_DOMAIN_NAMES, SecurityUtils.getLargeSecurityParameter( _userParamService, plugin, MARK_BANNED_DOMAIN_NAMES ) );
 
             model = SecurityUtils.checkSecurityParameters( _userParamService, model, plugin );
+
+            for ( String strRule : PASSWORD_FORMAT_RULES )
+            {
+                model.put( strRule, SecurityUtils.getBooleanSecurityParameter( _userParamService, plugin, strRule ) );
+            }
         }
 
         return model;
@@ -729,6 +738,41 @@ public class DatabaseService
         {
             BaseUser user = DatabaseHome.findLuteceUserByLogin( databaseUser.getLogin( ), plugin, _baseAuthentication );
             SecurityService.getInstance( ).registerUser( request, user );
+        }
+    }
+
+    /**
+     * Get the values of the password format rules
+     *
+     * @param plugin
+     *            the plugin
+     * @return the value of each rule, by key
+     */
+    public Map<String, Boolean> getPasswordFormatRules( Plugin plugin )
+    {
+        Map<String, Boolean> mapRules = new HashMap<>( );
+
+        for ( String strRule : PASSWORD_FORMAT_RULES )
+        {
+            mapRules.put( strRule, SecurityUtils.getBooleanSecurityParameter( _userParamService, plugin, strRule ) );
+        }
+
+        return mapRules;
+    }
+
+    /**
+     * Store the values of the password format rules
+     *
+     * @param mapRules
+     *            the value of each rule, by key
+     * @param plugin
+     *            the plugin
+     */
+    public void updatePasswordFormatRules( Map<String, Boolean> mapRules, Plugin plugin )
+    {
+        for ( Map.Entry<String, Boolean> rule : mapRules.entrySet( ) )
+        {
+            SecurityUtils.updateParameterValue( _userParamService, plugin, rule.getKey( ), Boolean.toString( Boolean.TRUE.equals( rule.getValue( ) ) ) );
         }
     }
 }
