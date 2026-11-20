@@ -39,7 +39,7 @@
                 <#assign classEmail = typeClass />
             </#if>
             <#if error_code='error_sending_email'>
-                <@cAlert class='danger' title='#i18n{module.mylutece.database.message.account.errorSendingEmail}' />
+                <@cAlert class='danger' title='#i18n{module.mylutece.database.message.create_account.errorSendingEmail}' />
             </#if>
             <#if error_code='error_captcha'>
                 <@cAlert class='danger' title='#i18n{module.mylutece.database.message.create_account.errorCaptcha}' />
