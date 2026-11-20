@@ -219,6 +219,7 @@ public class BaseAuthentication extends PortalAuthentication
         // Creating a record of connections log
         ConnectionLog connectionLog = new ConnectionLog( );
         connectionLog.setIpAddress( SecurityUtil.getRealIp( request ) );
+        connectionLog.setLogin( strUserName );
         connectionLog.setDateLogin( new java.sql.Timestamp( new java.util.Date( ).getTime( ) ) );
 
         // Test the number of errors during an interval of minutes
@@ -234,9 +235,15 @@ public class BaseAuthentication extends PortalAuthentication
 
         Locale locale = request.getLocale( );
 
+        int nNbFailedIp = 0;
+
         if ( ( ( nMaxFailed > 0 ) || ( nMaxFailedCaptcha > 0 ) ) && ( nIntervalMinutes > 0 ) )
         {
-            int nNbFailed = ConnectionLogHome.getLoginErrors( connectionLog, nIntervalMinutes, pluginMyLutece );
+            // The failures are counted per address and per login: either one reaching the maximum locks the login, until the failures are
+            // older than the interval
+            nNbFailedIp = ConnectionLogHome.getLoginErrors( connectionLog, nIntervalMinutes, pluginMyLutece );
+            int nNbFailedLogin = StringUtils.isBlank( strUserName ) ? 0 : ConnectionLogHome.getLoginErrorsByLogin( connectionLog, nIntervalMinutes, pluginMyLutece );
+            int nNbFailed = Math.max( nNbFailedIp, nNbFailedLogin );
 
             if ( ( nMaxFailedCaptcha > 0 ) && ( nNbFailed >= nMaxFailedCaptcha ) )
             {
@@ -245,15 +252,8 @@ public class BaseAuthentication extends PortalAuthentication
 
             if ( ( nMaxFailed > 0 ) && ( nNbFailed >= nMaxFailed ) )
             {
-                if ( nNbFailed == nMaxFailed )
-                {
-                    ReferenceItem item = DatabaseUserParameterHome.findByKey( PARAMETER_ENABLE_UNBLOCK_IP, plugin );
-
-                    if ( ( item != null ) && item.isChecked( ) )
-                    {
-                        sendUnlockLinkToUser( strUserName, nIntervalMinutes, request, plugin );
-                    }
-                }
+                // A refusal of the lock is not a new failure: MyLuteceApp does not log it, so that the lock is not extended
+                request.setAttribute( ConnectionLog.ATTRIBUTE_LOGIN_LOCKED, Boolean.TRUE );
 
                 Object [ ] args = {
                         Integer.toString( nIntervalMinutes )
@@ -292,6 +292,17 @@ public class BaseAuthentication extends PortalAuthentication
         if ( !databaseService.checkPassword( strUserName, strUserPassword, plugin ) )
         {
             AppLogService.info( "User login : Incorrect login or password" + strUserName );
+
+            // This failure locks the address: the user can be sent the link that unlocks it (sent once, as the refusals of the lock are not logged)
+            if ( ( nMaxFailed > 0 ) && ( nIntervalMinutes > 0 ) && ( nNbFailedIp + 1 == nMaxFailed ) )
+            {
+                ReferenceItem item = DatabaseUserParameterHome.findByKey( PARAMETER_ENABLE_UNBLOCK_IP, plugin );
+
+                if ( ( item != null ) && item.isChecked( ) )
+                {
+                    sendUnlockLinkToUser( strUserName, nIntervalMinutes, request, plugin );
+                }
+            }
 
             if ( bEnableCaptcha )
             {
